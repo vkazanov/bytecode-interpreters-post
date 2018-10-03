@@ -1,0 +1,6 @@
+A few basic bytecode interpreters used as example code in an article (see =interpreter-p1.org=). Given
+a recent GCC all the interpreters can be compiled in one go using a supplied Makefile:
+
+#+BEGIN_SRC shell
+make all
+#+END_SRC
