@@ -3,4 +3,5 @@ a recent GCC all the interpreters can be compiled in one go using a supplied Mak
 
 #+BEGIN_SRC shell
 make all
+make test
 #+END_SRC
