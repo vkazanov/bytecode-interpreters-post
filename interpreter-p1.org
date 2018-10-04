@@ -714,8 +714,3 @@ match_result vm_match(uint8_t *bytecode, char *str)
 
   В следующих статьях я разберу практические реализации виртуальных машин в популярных языках
   программирования и расскажу, зачем отделу Business Intelligence Badoo понадобился байт-код.
-
-* Footnotes
-
-[fn:stack-vs-register] Virtual machine showdown: Stack versus registers, 2008
-[fn:high-low-level] Virtual-Machine Abstraction and Optimization Techniques, 2009
