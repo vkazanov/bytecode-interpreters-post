@@ -8,11 +8,11 @@ make test
 
 Examples contain:
 
-1. A trival switch interpreter.
-2. Immediate operand instruction example.
-3. A stack vm.
-4. A register vm.
-5. A regular expression matching machine.
+1. [[file:interpreter-basic-switch.c][A trival switch interpreter]].
+2. Immediate operand instruction [[file:interpreter-immediate-arg.c][example]].
+3. [[file:interpreter-stack-machine.c][A stack vm]].
+4. [[file:interpreter-register-machine.c][A register vm]].
+5. A [[file:interpreter-regexp.c][regular expression matching machine]].
 
 The article:
 
