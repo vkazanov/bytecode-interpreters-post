@@ -5,3 +5,15 @@ a recent GCC all the interpreters can be compiled in one go using a supplied Mak
 make all
 make test
 #+END_SRC
+
+Examples contain:
+
+1. A trival switch interpreter.
+2. Immediate operand instruction example.
+3. A stack vm.
+4. A register vm.
+5. A regular expression matching machine.
+
+The article:
+
+1. DIY bytecode interpreters ([[file:interpreter-p1.org][source in russian]], [[https://habr.com/company/badoo/blog/425325/][published in russian]])
