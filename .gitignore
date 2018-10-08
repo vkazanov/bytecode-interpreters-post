@@ -59,6 +59,8 @@ dkms.conf
 # pigletvm
 pvm
 pvm-test
+*.pvm
+*.bin
 *-test
 
 # tags:

@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "pigletvm-stack.h"
 
 #define MAX_CODE_LEN 4096
+#define MAX_LINE_LEN 256
 
 static char *error_to_msg[] = {
     [SUCCESS] = "success",
@@ -29,8 +31,8 @@ static struct opcode_to_disinfo {
 
 static void opname_to_opcode(const char *opname, int *op, size_t *num_args)
 {
-    for (int i = 0; i < OP_NUMBER_OF_OPS; i++ ) {
-        if (strcmp(opcode_to_disinfo[i].name, opname) == 0) {
+    for (int i = 0; i < OP_NUMBER_OF_OPS; i++) {
+        if (strcasecmp(opcode_to_disinfo[i].name, opname) == 0) {
             *op = i;
             *num_args = opcode_to_disinfo[i].num_args;
             return;
@@ -73,6 +75,8 @@ static int run(uint8_t *bytecode)
         fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
         return EXIT_FAILURE;
     }
+    uint64_t result_value = vm_get_result();
+    printf("Result value: %" PRIu64 "\n", result_value);
     return EXIT_SUCCESS;
 }
 
@@ -82,17 +86,25 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
     if (line[0] == '#' || line[0] == '\n')
         return pc;
 
-    char *saveptr = NULL, *str = NULL;
-    char *opname = strtok_r(str, " ", &saveptr);
+    char *saveptr = NULL;
+    char *opname = strtok_r(line, " ", &saveptr);
     if (!opname) {
         fprintf(stderr, "Cannot parse string: %s\n", line);
         exit(EXIT_FAILURE);
     }
 
-    /* Find the op, put it into bytecode */
+    /* Strip opname, find it's info, put it into bytecode */
     int op;
     size_t arg_num;
-    opname_to_opcode(opname, &op, &arg_num);
+    char opname_stripped[MAX_LINE_LEN];
+    char *d = opname_stripped;
+
+    /* Strip spaces */
+    do
+        while(isspace(*opname))
+            opname++;
+    while((*d++ = *opname++));
+    opname_to_opcode(opname_stripped, &op, &arg_num);
     bytecode[pc++] = op;
 
     /* See if there any immediate args left on the line to be put into bytecode */
@@ -124,10 +136,8 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
 
 static uint8_t *compile_file(const char *path)
 {
-#define MAX_LINE_LEN 256
-
-    FILE *file = fopen(path, "rb");
-    if (!file) {
+    FILE *file = fopen(path, "r");
+    if (file == NULL) {
         fprintf(stderr, "File does not exist: %s\n", path);
         exit(EXIT_FAILURE);
     }
@@ -140,13 +150,11 @@ static uint8_t *compile_file(const char *path)
 
     size_t pc = 0;
     char line_buf[MAX_LINE_LEN];
-    while (fgets(line_buf, MAX_LINE_LEN, file) != NULL)
+    while (fgets(line_buf, MAX_LINE_LEN, file))
         pc = compile_line(line_buf, bytecode, pc);
 
     fclose(file);
     return bytecode;
-
-#undef MAX_LINE_LEN
 }
 
 static uint8_t *read_file(const char *path)
@@ -230,7 +238,7 @@ int main(int argc, char *argv[])
         }
 
         const char *input_path = argv[2];
-        const char *output_path = argv[2];
+        const char *output_path = argv[3];
 
         uint8_t *bytecode = compile_file(input_path);
         write_file(bytecode, output_path);
