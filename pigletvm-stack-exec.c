@@ -4,14 +4,27 @@
 
 #include "pigletvm-stack.h"
 
-static void disassemble(uint8_t *bytecode)
+static char *error_to_msg[] = {
+    [SUCCESS] = "success",
+    [ERROR_DIVISION_BY_ZERO] = "division by zero",
+    [ERROR_UNKNOWN_OPCODE] = "unknown opcode",
+    [ERROR_END_OF_STREAM] = "end of stream",
+};
+
+static int disassemble(uint8_t *bytecode)
 {
     (void) bytecode;
+    return EXIT_SUCCESS;
 }
 
-static void run(uint8_t *bytecode)
+static int run(uint8_t *bytecode)
 {
-    (void) bytecode;
+    interpret_result res = vm_interpret(bytecode);
+    if (res != SUCCESS) {
+        fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }
 
 static uint8_t *read_file(const char *path)
@@ -54,14 +67,16 @@ int main(int argc, char *argv[])
     const char *path = argv[2];
     uint8_t *bytecode = read_file(path);
 
+    int res;
     if (0 == strcmp(cmd, "dis")) {
-        disassemble(bytecode);
+        res = disassemble(bytecode);
     } else if (0 == strcmp(cmd, "run")) {
-        run(bytecode);
+        res = run(bytecode);
     } else {
         fprintf(stderr, "Unknown cmd: %s\n", cmd);;
+        res = EXIT_FAILURE;
     }
 
     free(bytecode);
-    return EXIT_SUCCESS;
+    return res;
 }
