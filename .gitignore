@@ -55,3 +55,8 @@ dkms.conf
 *.html
 *.md
 *.odt
+
+# pigletvm
+pvm
+pvm-test
+*-test
