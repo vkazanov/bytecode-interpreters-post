@@ -43,7 +43,7 @@ static void opname_to_opcode(const char *opname, int *op, size_t *num_args)
     exit(EXIT_FAILURE);
 }
 
-static void print_arg(char *name, size_t arg_offset, uint8_t *bytecode, size_t num_args)
+static void print_args(char *name, size_t arg_offset, uint8_t *bytecode, size_t num_args)
 {
     printf("%s", name);
     for (size_t arg_i = 0; arg_i < num_args; arg_i++ )
@@ -56,7 +56,7 @@ static size_t print_instruction(uint8_t *bytecode, size_t offset)
     uint8_t op = bytecode[offset++];
     char *op_name = opcode_to_disinfo[op].name;
     size_t num_args = opcode_to_disinfo[op].num_args;
-    print_arg(op_name, offset, bytecode, num_args);
+    print_args(op_name, offset, bytecode, num_args);
     return offset + num_args;
 }
 
