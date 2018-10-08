@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #include "pigletvm-stack.h"
 
@@ -16,7 +17,7 @@ static char *error_to_msg[] = {
 };
 
 static struct opcode_to_disinfo {
-    size_t num_args;
+    bool has_arg;
     char *name;
 } opcode_to_disinfo[] = {
     [OP_ABORT] = {0, "ABORT"},
@@ -29,12 +30,12 @@ static struct opcode_to_disinfo {
     [OP_DONE] = {0, "DONE"},
 };
 
-static void opname_to_opcode(const char *opname, int *op, size_t *num_args)
+static void opname_to_opcode(const char *opname, int *op, bool *has_arg)
 {
     for (int i = 0; i < OP_NUMBER_OF_OPS; i++) {
         if (strcasecmp(opcode_to_disinfo[i].name, opname) == 0) {
             *op = i;
-            *num_args = opcode_to_disinfo[i].num_args;
+            *has_arg = opcode_to_disinfo[i].has_arg;
             return;
         }
     }
@@ -43,21 +44,20 @@ static void opname_to_opcode(const char *opname, int *op, size_t *num_args)
     exit(EXIT_FAILURE);
 }
 
-static void print_args(char *name, size_t arg_offset, uint8_t *bytecode, size_t num_args)
-{
-    printf("%s", name);
-    for (size_t arg_i = 0; arg_i < num_args; arg_i++ )
-        printf(" %d", bytecode[arg_offset++]);
-    printf("\n");
-}
-
 static size_t print_instruction(uint8_t *bytecode, size_t offset)
 {
     uint8_t op = bytecode[offset++];
     char *op_name = opcode_to_disinfo[op].name;
-    size_t num_args = opcode_to_disinfo[op].num_args;
-    print_args(op_name, offset, bytecode, num_args);
-    return offset + num_args;
+    bool has_arg = opcode_to_disinfo[op].has_arg;
+
+    printf("%s", op_name);
+    if (has_arg) {
+        uint16_t arg = bytecode[offset++];
+        printf(" %" PRIu16, arg);
+    }
+    printf("\n");
+
+    return offset + 2;
 }
 
 static int disassemble(uint8_t *bytecode)
@@ -94,29 +94,32 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
     }
 
     /* Strip opname, find it's info, put it into bytecode */
-    int op;
-    size_t arg_num;
+
     char opname_stripped[MAX_LINE_LEN];
     char *d = opname_stripped;
 
-    /* Strip spaces */
+    /* Strip */
     do
         while(isspace(*opname))
             opname++;
     while((*d++ = *opname++));
-    opname_to_opcode(opname_stripped, &op, &arg_num);
+
+    /* Get info */
+    int op;
+    bool has_arg;
+    opname_to_opcode(opname_stripped, &op, &has_arg);
     bytecode[pc++] = op;
 
-    /* See if there any immediate args left on the line to be put into bytecode */
+    /* See if there an immediate arg left on the line to be put into bytecode */
     for (;;) {
         char *arg = strtok_r(NULL, " ", &saveptr);
-        if (!arg && arg_num) {
+        if (!arg && has_arg) {
             fprintf(stderr, "Not enough arguments supplied: %s\n", line);
             exit(EXIT_FAILURE);
-        } else if (arg && !arg_num) {
+        } else if (arg && !has_arg) {
             fprintf(stderr, "Too many arguments supplied: %s\n", line);
             exit(EXIT_FAILURE);
-        } else if (!arg && !arg_num) {
+        } else if (!arg && !has_arg) {
             /* This is fine */
             break;
         }
@@ -128,7 +131,7 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
         }
 
         bytecode[pc++] = (uint8_t)arg_val;
-        arg_num--;
+        has_arg = false;
     }
 
     return pc;
