@@ -11,9 +11,42 @@ static char *error_to_msg[] = {
     [ERROR_END_OF_STREAM] = "end of stream",
 };
 
+static struct opcode_to_disinfo {
+    size_t num_args;
+    char *name;
+} opcode_to_disinfo[] = {
+    [OP_ABORT] = {0, "OP_ABORT"},
+    [OP_PUSHI] = {1, "OP_PUSHI"},
+    [OP_ADD] = {0, "OP_ADD"},
+    [OP_SUB] = {0, "OP_SUB"},
+    [OP_DIV] = {0, "OP_DIV"},
+    [OP_MUL] = {0, "OP_MUL"},
+    [OP_POP_RES] = {0, "OP_POP_RES"},
+    [OP_DONE] = {0, "OP_DONE"},
+};
+
+static void print_arg(char *name, size_t arg_offset, uint8_t *bytecode, size_t num_args)
+{
+    printf("%s", name);
+    for (size_t arg_i = 0; arg_i < num_args; arg_i++ )
+        printf(" %d", bytecode[arg_offset++]);
+    printf("\n");
+}
+
+static size_t print_instruction(uint8_t *bytecode, size_t offset)
+{
+    uint8_t op = bytecode[offset++];
+    char *op_name = opcode_to_disinfo[op].name;
+    size_t num_args = opcode_to_disinfo[op].num_args;
+    print_arg(op_name, offset, bytecode, num_args);
+    return offset + num_args;
+}
+
 static int disassemble(uint8_t *bytecode)
 {
-    (void) bytecode;
+    size_t offset = 0;
+    while (bytecode[offset])
+        offset = print_instruction(bytecode, offset);
     return EXIT_SUCCESS;
 }
 

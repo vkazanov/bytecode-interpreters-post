@@ -8,7 +8,7 @@ typedef enum interpret_result {
 } interpret_result;
 
 typedef enum {
-    /* zero opcode just aborts execution immediately with an error */
+    /* just a sentinel ending the instruction stream, should never be reached by the interpreter */
     OP_ABORT,
     /* push the immediate argument onto the stack */
     OP_PUSHI,
@@ -22,7 +22,7 @@ typedef enum {
     OP_MUL,
     /* pop the top of the stack and set it as execution result */
     OP_POP_RES,
-    /* stop execution */
+    /* properly stop execution */
     OP_DONE,
 } opcode;
 
