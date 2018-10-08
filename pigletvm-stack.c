@@ -99,6 +99,9 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_DONE: {
             return SUCCESS;
         }
+        case OP_ABORT: {
+            return ERROR_END_OF_STREAM;
+        }
         default:
             return ERROR_UNKNOWN_OPCODE;
         }

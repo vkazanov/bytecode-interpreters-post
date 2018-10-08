@@ -45,8 +45,6 @@ static uint8_t *read_file(const char *path)
 
 int main(int argc, char *argv[])
 {
-    (void) argc; (void) argv;
-
     if (argc != 3) {
         fprintf(stderr, "Usage: <dis|run> <path/to/bytecode>\n");
         exit(EXIT_FAILURE);
@@ -56,12 +54,13 @@ int main(int argc, char *argv[])
     const char *path = argv[2];
     uint8_t *bytecode = read_file(path);
 
-    if (0 == strcmp(cmd, "dis"))
+    if (0 == strcmp(cmd, "dis")) {
         disassemble(bytecode);
-    else if (0 == strcmp(cmd, "run"))
+    } else if (0 == strcmp(cmd, "run")) {
         run(bytecode);
-    else
+    } else {
         fprintf(stderr, "Unknown cmd: %s\n", cmd);;
+    }
 
     free(bytecode);
     return EXIT_SUCCESS;

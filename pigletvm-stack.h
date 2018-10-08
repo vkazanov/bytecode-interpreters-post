@@ -4,9 +4,12 @@ typedef enum interpret_result {
     SUCCESS,
     ERROR_DIVISION_BY_ZERO,
     ERROR_UNKNOWN_OPCODE,
+    ERROR_END_OF_STREAM,
 } interpret_result;
 
 typedef enum {
+    /* zero opcode just aborts execution immediately with an error */
+    OP_ABORT,
     /* push the immediate argument onto the stack */
     OP_PUSHI,
     /* pop 2 values from the stack, add and push the result onto the stack */
