@@ -24,6 +24,8 @@ typedef enum {
     OP_POP_RES,
     /* properly stop execution */
     OP_DONE,
+    /* just a helper to count operation number */
+    OP_NUMBER_OF_OPS
 } opcode;
 
 interpret_result vm_interpret(uint8_t *bytecode);

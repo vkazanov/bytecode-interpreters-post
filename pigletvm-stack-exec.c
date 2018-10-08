@@ -4,6 +4,8 @@
 
 #include "pigletvm-stack.h"
 
+#define MAX_CODE_LEN 4096
+
 static char *error_to_msg[] = {
     [SUCCESS] = "success",
     [ERROR_DIVISION_BY_ZERO] = "division by zero",
@@ -15,15 +17,29 @@ static struct opcode_to_disinfo {
     size_t num_args;
     char *name;
 } opcode_to_disinfo[] = {
-    [OP_ABORT] = {0, "OP_ABORT"},
-    [OP_PUSHI] = {1, "OP_PUSHI"},
-    [OP_ADD] = {0, "OP_ADD"},
-    [OP_SUB] = {0, "OP_SUB"},
-    [OP_DIV] = {0, "OP_DIV"},
-    [OP_MUL] = {0, "OP_MUL"},
-    [OP_POP_RES] = {0, "OP_POP_RES"},
-    [OP_DONE] = {0, "OP_DONE"},
+    [OP_ABORT] = {0, "ABORT"},
+    [OP_PUSHI] = {1, "PUSHI"},
+    [OP_ADD] = {0, "ADD"},
+    [OP_SUB] = {0, "SUB"},
+    [OP_DIV] = {0, "DIV"},
+    [OP_MUL] = {0, "MUL"},
+    [OP_POP_RES] = {0, "POP_RES"},
+    [OP_DONE] = {0, "DONE"},
 };
+
+static void opname_to_opcode(const char *opname, int *op, size_t *num_args)
+{
+    for (int i = 0; i < OP_NUMBER_OF_OPS; i++ ) {
+        if (strcmp(opcode_to_disinfo[i].name, opname) == 0) {
+            *op = i;
+            *num_args = opcode_to_disinfo[i].num_args;
+            return;
+        }
+    }
+
+    fprintf(stderr, "Unknown operation name: %s\n", opname);
+    exit(EXIT_FAILURE);
+}
 
 static void print_arg(char *name, size_t arg_offset, uint8_t *bytecode, size_t num_args)
 {
@@ -60,6 +76,79 @@ static int run(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
+static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
+{
+    /* Ignore comments and empty lines*/
+    if (line[0] == '#' || line[0] == '\n')
+        return pc;
+
+    char *saveptr = NULL, *str = NULL;
+    char *opname = strtok_r(str, " ", &saveptr);
+    if (!opname) {
+        fprintf(stderr, "Cannot parse string: %s\n", line);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Find the op, put it into bytecode */
+    int op;
+    size_t arg_num;
+    opname_to_opcode(opname, &op, &arg_num);
+    bytecode[pc++] = op;
+
+    /* See if there any immediate args left on the line to be put into bytecode */
+    for (;;) {
+        char *arg = strtok_r(NULL, " ", &saveptr);
+        if (!arg && arg_num) {
+            fprintf(stderr, "Not enough arguments supplied: %s\n", line);
+            exit(EXIT_FAILURE);
+        } else if (arg && !arg_num) {
+            fprintf(stderr, "Too many arguments supplied: %s\n", line);
+            exit(EXIT_FAILURE);
+        } else if (!arg && !arg_num) {
+            /* This is fine */
+            break;
+        }
+
+        int8_t arg_val = 0;
+        if (sscanf(arg, "%" SCNi8, &arg_val) != 1) {
+            fprintf(stderr, "Invalid argument supplied: %s\n", arg);
+            exit(EXIT_FAILURE);
+        }
+
+        bytecode[pc++] = (uint8_t)arg_val;
+        arg_num--;
+    }
+
+    return pc;
+}
+
+static uint8_t *compile_file(const char *path)
+{
+#define MAX_LINE_LEN 256
+
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        fprintf(stderr, "File does not exist: %s\n", path);
+        exit(EXIT_FAILURE);
+    }
+
+    uint8_t *bytecode = malloc(MAX_CODE_LEN);
+    if (!bytecode) {
+        fprintf(stderr, "Failed to allocate memory\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t pc = 0;
+    char line_buf[MAX_LINE_LEN];
+    while (fgets(line_buf, MAX_LINE_LEN, file) != NULL)
+        pc = compile_line(line_buf, bytecode, pc);
+
+    fclose(file);
+    return bytecode;
+
+#undef MAX_LINE_LEN
+}
+
 static uint8_t *read_file(const char *path)
 {
     FILE *file = fopen(path, "rb");
@@ -89,10 +178,21 @@ static uint8_t *read_file(const char *path)
     return buf;
 }
 
+static void write_file(const uint8_t *bytecode, const char *path)
+{
+    FILE *file = fopen(path, "wb");
+    size_t bytecode_len = strlen((char *)bytecode);
+    if (fwrite(bytecode, bytecode_len, 1, file) != 1) {
+        fprintf(stderr, "Failed to write to a file: %s\n", path);
+        exit(EXIT_FAILURE);
+    }
+    fclose(file);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 3) {
-        fprintf(stderr, "Usage: <dis|run> <path/to/bytecode>\n");
+        fprintf(stderr, "Usage: <dis|run|asm> <path/to/bytecode> [<path/to/output>]\n");
         exit(EXIT_FAILURE);
     }
 
@@ -100,6 +200,11 @@ int main(int argc, char *argv[])
 
     int res;
     if (0 == strcmp(cmd, "dis")) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: dis <path/to/bytecode>\n");
+            exit(EXIT_FAILURE);
+        }
+
         const char *path = argv[2];
         uint8_t *bytecode = read_file(path);
 
@@ -107,11 +212,30 @@ int main(int argc, char *argv[])
 
         free(bytecode);
     } else if (0 == strcmp(cmd, "run")) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: run <path/to/bytecode>\n");
+            exit(EXIT_FAILURE);
+        }
+
         const char *path = argv[2];
         uint8_t *bytecode = read_file(path);
 
         res = run(bytecode);
 
+        free(bytecode);
+    } else if (0 == strcmp(cmd, "asm")) {
+        if (argc != 4) {
+            fprintf(stderr, "Usage: asm <path/to/asm> <path/to/output/bytecode>\n");
+            exit(EXIT_FAILURE);
+        }
+
+        const char *input_path = argv[2];
+        const char *output_path = argv[2];
+
+        uint8_t *bytecode = compile_file(input_path);
+        write_file(bytecode, output_path);
+
+        res = EXIT_SUCCESS;
         free(bytecode);
     } else {
         fprintf(stderr, "Unknown cmd: %s\n", cmd);;
