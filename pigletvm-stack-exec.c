@@ -91,25 +91,32 @@ static uint8_t *read_file(const char *path)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) {
+    if (argc < 3) {
         fprintf(stderr, "Usage: <dis|run> <path/to/bytecode>\n");
         exit(EXIT_FAILURE);
     }
 
     const char *cmd = argv[1];
-    const char *path = argv[2];
-    uint8_t *bytecode = read_file(path);
 
     int res;
     if (0 == strcmp(cmd, "dis")) {
+        const char *path = argv[2];
+        uint8_t *bytecode = read_file(path);
+
         res = disassemble(bytecode);
+
+        free(bytecode);
     } else if (0 == strcmp(cmd, "run")) {
+        const char *path = argv[2];
+        uint8_t *bytecode = read_file(path);
+
         res = run(bytecode);
+
+        free(bytecode);
     } else {
         fprintf(stderr, "Unknown cmd: %s\n", cmd);;
         res = EXIT_FAILURE;
     }
 
-    free(bytecode);
     return res;
 }
