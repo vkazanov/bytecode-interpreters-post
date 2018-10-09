@@ -28,6 +28,7 @@ static struct opcode_to_disinfo {
     [OP_MUL] = {0, "MUL"},
     [OP_POP_RES] = {0, "POP_RES"},
     [OP_DONE] = {0, "DONE"},
+    [OP_PRINT] = {0, "PRINT"},
 };
 
 static void opname_to_opcode(const char *opname, uint8_t *op, bool *has_arg)

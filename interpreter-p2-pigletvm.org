@@ -14,13 +14,13 @@
 
   - [X] 16 bit args in assembler/disassembler
 
+  - [X] печать значений со стека
+
+  - [ ] JUMP_FORWARD/JUMP_BACKWARD
+
+  - [ ] JUMP_IF_TRUE/JUMP_IF_FALSE
+
   - [ ] метки в ассемблере
-
-  - [ ] печать значений со стека
-
-  - [ ] JUMP - к абсолютному адресу
-
-  - [ ] JUMP_IF_TRUE/JUMP_IF_FALSE - к абсолютному адресу
 
   - [ ] массив памяти, загрузка на стек и обратно
 

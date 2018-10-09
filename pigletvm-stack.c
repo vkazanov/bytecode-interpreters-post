@@ -57,7 +57,6 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_PUSHI: {
             /* get the argument, push it onto stack */
             uint16_t arg = NEXT_ARG();
-            printf("arg: %" PRIu16 "\n", arg);
             vm_stack_push(arg);
             break;
         }
@@ -104,6 +103,11 @@ interpret_result vm_interpret(uint8_t *bytecode)
         }
         case OP_DONE: {
             return SUCCESS;
+        }
+        case OP_PRINT:{
+            uint64_t arg = vm_stack_pop();
+            printf("%" PRIu64 "\n", arg);
+            break;
         }
         case OP_ABORT: {
             return ERROR_END_OF_STREAM;

@@ -24,6 +24,8 @@ typedef enum {
     OP_POP_RES,
     /* properly stop execution */
     OP_DONE,
+    /* pop the top of the stack and print it */
+    OP_PRINT,
     /* just a helper to count operation number */
     OP_NUMBER_OF_OPS
 } opcode;
