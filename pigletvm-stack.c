@@ -42,16 +42,22 @@ static inline uint64_t vm_stack_pop(void)
 
 interpret_result vm_interpret(uint8_t *bytecode)
 {
+#define NEXT_OP()                                               \
+    (*vm.ip++)
+#define NEXT_ARG()                                      \
+    ((void)(vm.ip += 2), (vm.ip[-2] << 8) + vm.ip[-1])
+
     vm_reset();
 
     puts("Start interpreting");
     vm.ip = bytecode;
     for (;;) {
-        uint8_t instruction = *vm.ip++;
+        uint8_t instruction = NEXT_OP();
         switch (instruction) {
         case OP_PUSHI: {
             /* get the argument, push it onto stack */
-            uint8_t arg = *vm.ip++;
+            uint16_t arg = NEXT_ARG();
+            printf("arg: %" PRIu16 "\n", arg);
             vm_stack_push(arg);
             break;
         }
@@ -108,6 +114,9 @@ interpret_result vm_interpret(uint8_t *bytecode)
     }
 
     return SUCCESS;
+
+#undef NEXT_ARG
+#undef NEXT_OP
 }
 
 uint64_t vm_get_result(void)

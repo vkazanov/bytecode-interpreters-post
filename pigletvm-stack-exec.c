@@ -124,13 +124,15 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
             break;
         }
 
-        int8_t arg_val = 0;
-        if (sscanf(arg, "%" SCNi8, &arg_val) != 1) {
+        /* TODO: update? */
+        uint16_t arg_val = 0;
+        if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
             fprintf(stderr, "Invalid argument supplied: %s\n", arg);
             exit(EXIT_FAILURE);
         }
 
-        bytecode[pc++] = (uint8_t)arg_val;
+        /* TODO: 3 bytes here needed */
+        bytecode[pc++] = arg_val;
         has_arg = false;
     }
 

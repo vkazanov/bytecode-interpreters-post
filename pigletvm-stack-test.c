@@ -7,11 +7,14 @@
 
 int main(int argc, char *argv[])
 {
+#define ENCODE_ARG(arg)                         \
+    (((arg) & 0xff00) >> 8), ((arg) & 0x00ff)
+
     (void) argc; (void) argv;
 
     {
         /* Push and pop the result */
-        uint8_t code[] = { OP_PUSHI, 5, OP_POP_RES, OP_DONE };
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(5u), OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
         printf("vm state: %" PRIu64 "\n", vm_get_result());
 
@@ -21,7 +24,7 @@ int main(int argc, char *argv[])
 
     {
         /* Addition */
-        uint8_t code[] = { OP_PUSHI, 10, OP_PUSHI, 5, OP_ADD, OP_POP_RES, OP_DONE };
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(5), OP_ADD, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
         printf("vm state: %" PRIu64 "\n", vm_get_result());
 
@@ -31,7 +34,7 @@ int main(int argc, char *argv[])
 
     {
         /* Subtraction */
-        uint8_t code[] = { OP_PUSHI, 10, OP_PUSHI, 6, OP_SUB, OP_POP_RES, OP_DONE };
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(6), OP_SUB, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
         printf("vm state: %" PRIu64 "\n", vm_get_result());
 
@@ -41,7 +44,7 @@ int main(int argc, char *argv[])
 
     {
         /* Division */
-        uint8_t code[] = { OP_PUSHI, 10, OP_PUSHI, 5, OP_DIV, OP_POP_RES, OP_DONE };
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(5), OP_DIV, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
         printf("vm state: %" PRIu64 "\n", vm_get_result());
 
@@ -51,7 +54,7 @@ int main(int argc, char *argv[])
 
     {
         /* Division with error */
-        uint8_t code[] = { OP_PUSHI, 10, OP_PUSHI, 0, OP_DIV, OP_POP_RES, OP_DONE };
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(0), OP_DIV, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
         printf("vm state: %" PRIu64 "\n", vm_get_result());
 
@@ -60,7 +63,9 @@ int main(int argc, char *argv[])
 
     {
         /* Multiplication */
-        uint8_t code[] = { OP_PUSHI, 10, OP_PUSHI, 2, OP_MUL, OP_POP_RES, OP_DONE };
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(2), OP_MUL, OP_POP_RES, OP_DONE
+        };
         interpret_result result = vm_interpret(code);
         printf("vm state: %" PRIu64 "\n", vm_get_result());
 
@@ -70,7 +75,15 @@ int main(int argc, char *argv[])
 
     {
         /* Expression: 2*(11+3) */
-        uint8_t code[] = { OP_PUSHI, 2, OP_PUSHI, 11, OP_PUSHI, 3, OP_ADD, OP_MUL, OP_POP_RES, OP_DONE };
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_PUSHI, ENCODE_ARG(11),
+            OP_PUSHI, ENCODE_ARG(3),
+            OP_ADD,
+            OP_MUL,
+            OP_POP_RES,
+            OP_DONE
+        };
         interpret_result result = vm_interpret(code);
         printf("vm state: %" PRIu64 "\n", vm_get_result());
 
@@ -79,4 +92,6 @@ int main(int argc, char *argv[])
     }
 
     return EXIT_SUCCESS;
+
+#undef ENCODE_ARG
 }
