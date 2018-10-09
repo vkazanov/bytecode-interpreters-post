@@ -12,7 +12,7 @@
 
   - [X] 16 bit args in the machine
 
-  - [ ] 16 bit args in assembler/disassembler
+  - [X] 16 bit args in assembler/disassembler
 
   - [ ] метки в ассемблере
 

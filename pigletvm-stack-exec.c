@@ -30,7 +30,7 @@ static struct opcode_to_disinfo {
     [OP_DONE] = {0, "DONE"},
 };
 
-static void opname_to_opcode(const char *opname, int *op, bool *has_arg)
+static void opname_to_opcode(const char *opname, uint8_t *op, bool *has_arg)
 {
     for (int i = 0; i < OP_NUMBER_OF_OPS; i++) {
         if (strcasecmp(opcode_to_disinfo[i].name, opname) == 0) {
@@ -52,12 +52,13 @@ static size_t print_instruction(uint8_t *bytecode, size_t offset)
 
     printf("%s", op_name);
     if (has_arg) {
-        uint16_t arg = bytecode[offset++];
+        uint16_t arg = bytecode[offset++] << 8;
+        arg += bytecode[offset++];
         printf(" %" PRIu16, arg);
     }
     printf("\n");
 
-    return offset + 2;
+    return offset;
 }
 
 static int disassemble(uint8_t *bytecode)
@@ -105,7 +106,7 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
     while((*d++ = *opname++));
 
     /* Get info */
-    int op;
+    uint8_t op;
     bool has_arg;
     opname_to_opcode(opname_stripped, &op, &has_arg);
     bytecode[pc++] = op;
@@ -124,22 +125,20 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
             break;
         }
 
-        /* TODO: update? */
         uint16_t arg_val = 0;
         if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
             fprintf(stderr, "Invalid argument supplied: %s\n", arg);
             exit(EXIT_FAILURE);
         }
 
-        /* TODO: 3 bytes here needed */
-        bytecode[pc++] = arg_val;
+        bytecode[pc++] = (arg_val & 0xff00) >> 8;
+        bytecode[pc++] = (arg_val & 0x00ff);
         has_arg = false;
     }
-
     return pc;
 }
 
-static uint8_t *compile_file(const char *path)
+static uint8_t *compile_file(const char *path, size_t *bytecode_len)
 {
     FILE *file = fopen(path, "r");
     if (file == NULL) {
@@ -157,6 +156,7 @@ static uint8_t *compile_file(const char *path)
     char line_buf[MAX_LINE_LEN];
     while (fgets(line_buf, MAX_LINE_LEN, file))
         pc = compile_line(line_buf, bytecode, pc);
+    *bytecode_len = pc;
 
     fclose(file);
     return bytecode;
@@ -191,10 +191,9 @@ static uint8_t *read_file(const char *path)
     return buf;
 }
 
-static void write_file(const uint8_t *bytecode, const char *path)
+static void write_file(const uint8_t *bytecode, const size_t bytecode_len, const char *path)
 {
     FILE *file = fopen(path, "wb");
-    size_t bytecode_len = strlen((char *)bytecode);
     if (fwrite(bytecode, bytecode_len, 1, file) != 1) {
         fprintf(stderr, "Failed to write to a file: %s\n", path);
         exit(EXIT_FAILURE);
@@ -245,8 +244,9 @@ int main(int argc, char *argv[])
         const char *input_path = argv[2];
         const char *output_path = argv[3];
 
-        uint8_t *bytecode = compile_file(input_path);
-        write_file(bytecode, output_path);
+        size_t bytecode_len = 0;
+        uint8_t *bytecode = compile_file(input_path, &bytecode_len);
+        write_file(bytecode, bytecode_len, output_path);
 
         res = EXIT_SUCCESS;
         free(bytecode);
