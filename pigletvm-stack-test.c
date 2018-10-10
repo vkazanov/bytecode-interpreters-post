@@ -115,6 +115,108 @@ int main(int argc, char *argv[])
         assert(vm_get_result() == 4);
     }
 
+    {
+        /* equality test 1 */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_EQUAL,
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
+    }
+
+    {
+        /* equality test 2*/
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(1),
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_EQUAL,
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 0);
+    }
+
+    {
+        /* less test */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(1),
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_LESS,
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
+    }
+
+    {
+        /* less or equal test */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_LESS_OR_EQUAL,
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
+    }
+
+    {
+        /* greater test */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(3),
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_GREATER,
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
+    }
+
+    {
+        /* greater or equal test */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_GREATER_OR_EQUAL,
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
+    }
+
     return EXIT_SUCCESS;
 
 #undef ENCODE_ARG

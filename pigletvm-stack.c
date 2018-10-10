@@ -103,6 +103,41 @@ interpret_result vm_interpret(uint8_t *bytecode)
             vm.ip = bytecode + arg;
             break;
         }
+        case OP_EQUAL:{
+            uint64_t arg_right = vm_stack_pop();
+            uint64_t arg_left = vm_stack_pop();
+            uint64_t res = arg_left == arg_right;
+            vm_stack_push(res);
+            break;
+        }
+        case OP_LESS:{
+            uint64_t arg_right = vm_stack_pop();
+            uint64_t arg_left = vm_stack_pop();
+            uint64_t res = arg_left < arg_right;
+            vm_stack_push(res);
+            break;
+        }
+        case OP_LESS_OR_EQUAL:{
+            uint64_t arg_right = vm_stack_pop();
+            uint64_t arg_left = vm_stack_pop();
+            uint64_t res = arg_left <= arg_right;
+            vm_stack_push(res);
+            break;
+        }
+        case OP_GREATER:{
+            uint64_t arg_right = vm_stack_pop();
+            uint64_t arg_left = vm_stack_pop();
+            uint64_t res = arg_left > arg_right;
+            vm_stack_push(res);
+            break;
+        }
+        case OP_GREATER_OR_EQUAL:{
+            uint64_t arg_right = vm_stack_pop();
+            uint64_t arg_left = vm_stack_pop();
+            uint64_t res = arg_left >= arg_right;
+            vm_stack_push(res);
+            break;
+        }
         case OP_POP_RES: {
             /* Pop the top of the stack, set it as a result value */
             uint64_t res = vm_stack_pop();

@@ -16,9 +16,11 @@
 
   - [X] печать значений со стека
 
-  - [ ] JUMP
+  - [X] JUMP
 
-  - [ ] EQUAL/LESS/LESS_OR_EQUAL/GREATER/GREATER_OR_EQUAL/
+  - [X] EQUAL/LESS/LESS_OR_EQUAL/GREATER/GREATER_OR_EQUAL/
+
+  - [ ] asm/disasm update
 
   - [ ] JUMP_IF_TRUE/JUMP_IF_FALSE
 
