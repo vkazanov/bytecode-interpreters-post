@@ -20,6 +20,8 @@ typedef enum {
     OP_DIV,
     /* pop 2 values from the stack, multiply and push the result onto the stack */
     OP_MUL,
+    /* jump to an absolute bytecode address (the immediate argument) */
+    OP_JUMP,
     /* pop the top of the stack and set it as execution result */
     OP_POP_RES,
     /* properly stop execution */

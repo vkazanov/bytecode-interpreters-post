@@ -16,7 +16,9 @@
 
   - [X] печать значений со стека
 
-  - [ ] JUMP_FORWARD/JUMP_BACKWARD
+  - [ ] JUMP
+
+  - [ ] EQUAL/LESS/LESS_OR_EQUAL/GREATER/GREATER_OR_EQUAL/
 
   - [ ] JUMP_IF_TRUE/JUMP_IF_FALSE
 

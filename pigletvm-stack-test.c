@@ -91,6 +91,30 @@ int main(int argc, char *argv[])
         assert(vm_get_result() == 28);
     }
 
+    {
+        /* Absolute jump */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(3),
+            OP_PUSHI, ENCODE_ARG(1),
+            OP_ADD,
+            OP_JUMP, ENCODE_ARG(14),
+
+            /* skip */
+            OP_PUSHI, ENCODE_ARG(2),
+            OP_ADD,
+
+            /* jump here (byte No 14)*/
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 4);
+    }
+
     return EXIT_SUCCESS;
 
 #undef ENCODE_ARG

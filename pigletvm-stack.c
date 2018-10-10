@@ -46,6 +46,8 @@ interpret_result vm_interpret(uint8_t *bytecode)
     (*vm.ip++)
 #define NEXT_ARG()                                      \
     ((void)(vm.ip += 2), (vm.ip[-2] << 8) + vm.ip[-1])
+#define PEEK_ARG()                                      \
+    ((vm.ip[0] << 8) + vm.ip[1])
 
     vm_reset();
 
@@ -95,6 +97,12 @@ interpret_result vm_interpret(uint8_t *bytecode)
             vm_stack_push(res);
             break;
         }
+        case OP_JUMP:{
+            /* Use arg  */
+            uint16_t arg = PEEK_ARG();
+            vm.ip = bytecode + arg;
+            break;
+        }
         case OP_POP_RES: {
             /* Pop the top of the stack, set it as a result value */
             uint64_t res = vm_stack_pop();
@@ -120,6 +128,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
     return SUCCESS;
 
 #undef NEXT_ARG
+#undef PEEK_ARG
 #undef NEXT_OP
 }
 
