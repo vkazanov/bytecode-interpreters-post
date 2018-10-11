@@ -40,6 +40,30 @@ static struct opcode_to_disinfo {
     [OP_PRINT] = {0, "PRINT"},
 };
 
+typedef struct asm_line {
+    enum kind {OP_KIND, JUMP_KIND, LABEL_KIND} kind;
+    union {
+        /* a usual op, with an arg or without it */
+        struct op {
+            uint8_t opcode;
+            bool has_arg;
+            uint16_t arg;
+        } op;
+        /* a jump op, with a name of a label to jump to */
+        struct {
+            uint8_t opcode;
+            char *label_name;
+            uint16_t target;
+        } jump;
+        /* a label to be used in jumps */
+        struct {
+            char *label_name;
+        } label;
+    } as;
+    /* a list of lines */
+    struct asm_line *next;
+} asm_line;
+
 static void opname_to_opcode(const char *opname, uint8_t *op, bool *has_arg)
 {
     for (int i = 0; i < OP_NUMBER_OF_OPS; i++) {
@@ -91,11 +115,11 @@ static int run(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
-static size_t assemble_line(char *line, uint8_t *bytecode, size_t pc)
+static asm_line *parse_line(char *line)
 {
     /* Ignore comments and empty lines*/
     if (line[0] == '#' || line[0] == '\n')
-        return pc;
+        return NULL;
 
     char *saveptr = NULL;
     char *opname = strtok_r(line, " ", &saveptr);
@@ -115,11 +139,15 @@ static size_t assemble_line(char *line, uint8_t *bytecode, size_t pc)
             opname++;
     while((*d++ = *opname++));
 
+    asm_line *parsed_line = malloc(sizeof(*line));
+
     /* Get info */
     uint8_t op;
     bool has_arg;
     opname_to_opcode(opname_stripped, &op, &has_arg);
-    bytecode[pc++] = op;
+    parsed_line->kind = OP_KIND;
+    parsed_line->as.op.opcode = op;
+    parsed_line->as.op.has_arg = has_arg;
 
     /* See if there an immediate arg left on the line to be put into bytecode */
     for (;;) {
@@ -141,9 +169,20 @@ static size_t assemble_line(char *line, uint8_t *bytecode, size_t pc)
             exit(EXIT_FAILURE);
         }
 
-        bytecode[pc++] = (arg_val & 0xff00) >> 8;
-        bytecode[pc++] = (arg_val & 0x00ff);
+        parsed_line->as.op.arg = arg_val;
         has_arg = false;
+    }
+
+    return parsed_line;
+}
+
+static size_t assemble_line(asm_line *line, uint8_t *bytecode, size_t pc)
+{
+    bytecode[pc++] = line->as.op.opcode;
+    if (line->as.op.has_arg) {
+        uint16_t arg = line->as.op.arg;
+        bytecode[pc++] = (arg & 0xff00) >> 8;
+        bytecode[pc++] = (arg & 0x00ff);
     }
     return pc;
 }
@@ -162,10 +201,27 @@ static uint8_t *assemble(const char *path, size_t *bytecode_len)
         exit(EXIT_FAILURE);
     }
 
-    size_t pc = 0;
+    /* Parse lines */
     char line_buf[MAX_LINE_LEN];
-    while (fgets(line_buf, MAX_LINE_LEN, file))
-        pc = assemble_line(line_buf, bytecode, pc);
+    asm_line *lines_list = NULL;
+    asm_line *last_line = NULL;
+    while (fgets(line_buf, MAX_LINE_LEN, file)) {
+        asm_line *line = parse_line(line_buf);
+        if (!line)
+            continue;
+        if (!lines_list) {
+            lines_list = line;
+            last_line = line;
+        } else {
+            last_line->next = line;
+            last_line = line;
+        }
+    }
+
+    /* Compile lines */
+    size_t pc = 0;
+    for (asm_line *line = lines_list; line; line = line->next)
+        pc = assemble_line(line, bytecode, pc);
     *bytecode_len = pc;
 
     fclose(file);
