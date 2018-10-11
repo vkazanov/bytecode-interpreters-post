@@ -43,6 +43,12 @@ opinfo opcode_to_disinfo[] = {
     [OP_PRINT] = {0, "PRINT", 0},
 };
 
+typedef struct labelinfo {
+    char *name;
+    uint16_t address;
+    struct labelinfo *next;
+} labelinfo;
+
 typedef struct asm_line {
     enum kind {OP_KIND, JUMP_KIND, LABEL_KIND} kind;
     union {
@@ -56,7 +62,7 @@ typedef struct asm_line {
         struct {
             uint8_t opcode;
             char *label_name;
-            uint16_t target;
+            uint16_t target_address;
         } jump;
         /* a label to be used in jumps */
         struct {
@@ -118,30 +124,40 @@ static int run(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
+static void strip_line(char *source, char *target)
+{
+    do
+        while(isspace(*source))
+            source++;
+    while((*target++ = *source++));
+}
+
 static bool is_label_name(char *name)
 {
     /* always start with a letter */
     if (!isalpha(*name++))
         return false;
-    /* everything is alphanumberic */
-    while (*name)
+    /* everything is alphanumeric */
+    while (*name) {
         if (!isalnum(*name++))
             return false;
-
-    return false;
+    }
+    return true;
 }
 
-static void parse_jump_argument(asm_line *parsed_line, char *arg)
+static void parse_jump_argument(asm_line *parsed_line, char *arg_raw)
 {
+    char *arg = calloc(strlen(arg_raw), 1);
+    strip_line(arg_raw, arg);
     if (is_label_name(arg)) {
         parsed_line->as.jump.label_name = strdup(arg);
     } else {
         uint16_t arg_val = 0;
         if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
-            fprintf(stderr, "Invalid argument supplied: %s\n", arg);
+            fprintf(stderr, "Invalid address supplied: %s\n", arg);
             exit(EXIT_FAILURE);
         }
-        parsed_line->as.jump.target = arg_val;
+        parsed_line->as.jump.target_address = arg_val;
     }
 }
 
@@ -154,14 +170,6 @@ static void parse_op_argument(asm_line *parsed_line, char *arg)
     }
 
     parsed_line->as.op.arg = arg_val;
-}
-
-static void strip_line(char *source, char *target)
-{
-    do
-        while(isspace(*source))
-            source++;
-    while((*target++ = *source++));
 }
 
 static asm_line *parse_line(char *raw_line)
@@ -229,7 +237,6 @@ static asm_line *parse_line(char *raw_line)
                     /* This is fine */
                     break;
                 }
-
                 parse_jump_argument(parsed_line, arg);
 
                 should_get_arg = false;
@@ -264,6 +271,65 @@ static asm_line *parse_line(char *raw_line)
     return parsed_line;
 }
 
+static void collect_labelinfo(asm_line *line_list, labelinfo **list)
+{
+    size_t pc = 0;
+    for (asm_line *line = line_list; line; line = line->next) {
+        switch (line->kind) {
+        case OP_KIND:{
+            pc++;
+            if (line->as.op.has_arg)
+                pc += 2;
+            break;
+        }
+        case LABEL_KIND:{
+            labelinfo * label = calloc(sizeof(*label), 1);
+            label->name = line->as.label.label_name;
+            label->address = pc;
+            *list = label;
+            list = &label->next;
+            break;
+        }
+        case JUMP_KIND:{
+            pc += 3;
+            break;
+        }
+        default:{
+            fprintf(stderr, "Unknown kind: %d\n", line->kind);;
+            exit(EXIT_FAILURE);
+        }
+        }
+    }
+}
+
+static void resolve_jumps(asm_line *line_list, labelinfo *labelinfo_list)
+{
+    /* Look for jumps and get label addresses for 'em */
+    for (asm_line *line = line_list; line; line = line->next) {
+        if (line->kind != JUMP_KIND)
+            continue;
+
+        /* only resolve jumps that have labels as addresses */
+        if (line->as.jump.label_name == NULL)
+            continue;
+
+        /* Search through the list */
+        char *target_label_name = line->as.jump.label_name;
+        labelinfo *target_info = NULL;
+        for (target_info = labelinfo_list; target_info; target_info = target_info->next)
+            if (strcmp(target_label_name, target_info->name) == 0)
+                break;
+
+        /* Did not find anything, fail */
+        if (!target_info) {
+            fprintf(stderr, "Cannot resolve a label: %s\n", target_label_name);
+            exit(EXIT_FAILURE);
+        }
+
+        line->as.jump.target_address = target_info->address;
+    }
+}
+
 static size_t assemble_line(asm_line *line, uint8_t *bytecode, size_t pc)
 {
     switch (line->kind) {
@@ -281,7 +347,7 @@ static size_t assemble_line(asm_line *line, uint8_t *bytecode, size_t pc)
     }
     case JUMP_KIND:{
         bytecode[pc++] = line->as.jump.opcode;
-        uint16_t target = line->as.jump.target;
+        uint16_t target = line->as.jump.target_address;
         bytecode[pc++] = (target & 0xff00) >> 8;
         bytecode[pc++] = (target & 0x00ff);
         break;
@@ -294,40 +360,47 @@ static size_t assemble_line(asm_line *line, uint8_t *bytecode, size_t pc)
     return pc;
 }
 
-static uint8_t *assemble(const char *path, size_t *bytecode_len)
+static void assemble(const char *path, uint8_t *bytecode, size_t *bytecode_len)
 {
-    FILE *file = fopen(path, "r");
-    if (file == NULL) {
-        fprintf(stderr, "File does not exist: %s\n", path);
-        exit(EXIT_FAILURE);
-    }
-
-    /* Parse lines */
-    char line_buf[MAX_LINE_LEN];
     asm_line *lines = NULL;
-    asm_line **list_tail = &lines;
-    while (fgets(line_buf, MAX_LINE_LEN, file)) {
-        asm_line *line = parse_line(line_buf);
-        if (!line)
-            continue;
-        *list_tail = line;
-        list_tail = &line->next;
+
+    /* Parse the flie */
+    {
+        FILE *file = fopen(path, "r");
+        if (file == NULL) {
+            fprintf(stderr, "File does not exist: %s\n", path);
+            exit(EXIT_FAILURE);
+        }
+
+        /* Parse lines */
+        char line_buf[MAX_LINE_LEN];
+        asm_line **list_tail = &lines;
+        while (fgets(line_buf, MAX_LINE_LEN, file)) {
+            asm_line *line = parse_line(line_buf);
+            if (!line)
+                continue;
+            *list_tail = line;
+            list_tail = &line->next;
+        }
+        fclose(file);
     }
-    fclose(file);
 
-    /* Compile lines */
-    uint8_t *bytecode = calloc(MAX_CODE_LEN, 1);
-    if (!bytecode) {
-        fprintf(stderr, "Failed to allocate memory\n");
-        exit(EXIT_FAILURE);
+    /* Collect label addresses */
+    {
+        labelinfo *labelinfo_list = NULL;
+        collect_labelinfo(lines, &labelinfo_list);
+
+        /* Add proper addresses to jumps */
+        resolve_jumps(lines, labelinfo_list);
     }
 
-    size_t pc = 0;
-    for (asm_line *line = lines; line; line = line->next)
-        pc = assemble_line(line, bytecode, pc);
-    *bytecode_len = pc;
-
-    return bytecode;
+    /* Compile lines to bytecode*/
+    {
+        size_t pc = 0;
+        for (asm_line *line = lines; line; line = line->next)
+            pc = assemble_line(line, bytecode, pc);
+        *bytecode_len = pc;
+    }
 }
 
 static uint8_t *read_file(const char *path)
@@ -413,7 +486,13 @@ int main(int argc, char *argv[])
         const char *output_path = argv[3];
 
         size_t bytecode_len = 0;
-        uint8_t *bytecode = assemble(input_path, &bytecode_len);
+        uint8_t *bytecode = calloc(MAX_CODE_LEN, 1);
+        if (!bytecode) {
+            fprintf(stderr, "Failed to allocate memory\n");
+            exit(EXIT_FAILURE);
+        }
+
+        assemble(input_path, bytecode, &bytecode_len);
         write_file(bytecode, bytecode_len, output_path);
 
         res = EXIT_SUCCESS;
