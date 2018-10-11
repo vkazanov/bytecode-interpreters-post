@@ -16,28 +16,31 @@ static char *error_to_msg[] = {
     [ERROR_END_OF_STREAM] = "end of stream",
 };
 
-static struct opcode_to_disinfo {
+typedef struct opinfo {
     bool has_arg;
     char *name;
-} opcode_to_disinfo[] = {
-    [OP_ABORT] = {0, "ABORT"},
-    [OP_PUSHI] = {1, "PUSHI"},
-    [OP_DISCARD] = {0, "DISCARD"},
-    [OP_ADD] = {0, "ADD"},
-    [OP_SUB] = {0, "SUB"},
-    [OP_DIV] = {0, "DIV"},
-    [OP_MUL] = {0, "MUL"},
-    [OP_JUMP] = {1, "JUMP"},
-    [OP_JUMP_IF_TRUE] = {1, "JUMP_IF_TRUE"},
-    [OP_JUMP_IF_FALSE] = {1, "JUMP_IF_FALSE"},
-    [OP_EQUAL] = {0, "EQUAL"},
-    [OP_LESS] = {0, "LESS"},
-    [OP_LESS_OR_EQUAL] = {0, "LESS_OR_EQUAL"},
-    [OP_GREATER] = {0, "GREATER"},
-    [OP_GREATER_OR_EQUAL] = {0, "GREATER_OR_EQUAL"},
-    [OP_POP_RES] = {0, "POP_RES"},
-    [OP_DONE] = {0, "DONE"},
-    [OP_PRINT] = {0, "PRINT"},
+    bool is_jump;
+} opinfo;
+
+opinfo opcode_to_disinfo[] = {
+    [OP_ABORT] = {0, "ABORT", 0},
+    [OP_PUSHI] = {1, "PUSHI", 0},
+    [OP_DISCARD] = {0, "DISCARD", 0},
+    [OP_ADD] = {0, "ADD", 0},
+    [OP_SUB] = {0, "SUB", 0},
+    [OP_DIV] = {0, "DIV", 0},
+    [OP_MUL] = {0, "MUL", 0},
+    [OP_JUMP] = {1, "JUMP", 1},
+    [OP_JUMP_IF_TRUE] = {1, "JUMP_IF_TRUE", 1},
+    [OP_JUMP_IF_FALSE] = {1, "JUMP_IF_FALSE", 1},
+    [OP_EQUAL] = {0, "EQUAL", 0},
+    [OP_LESS] = {0, "LESS", 0},
+    [OP_LESS_OR_EQUAL] = {0, "LESS_OR_EQUAL", 0},
+    [OP_GREATER] = {0, "GREATER", 0},
+    [OP_GREATER_OR_EQUAL] = {0, "GREATER_OR_EQUAL", 0},
+    [OP_POP_RES] = {0, "POP_RES", 0},
+    [OP_DONE] = {0, "DONE", 0},
+    [OP_PRINT] = {0, "PRINT", 0},
 };
 
 typedef struct asm_line {
@@ -65,13 +68,12 @@ typedef struct asm_line {
     struct asm_line *next;
 } asm_line;
 
-static void opname_to_opcode(const char *opname, uint8_t *op, bool *has_arg)
+static opinfo *opname_to_opcode_info(const char *opname, uint8_t *op)
 {
     for (int i = 0; i < OP_NUMBER_OF_OPS; i++) {
         if (strcasecmp(opcode_to_disinfo[i].name, opname) == 0) {
             *op = i;
-            *has_arg = opcode_to_disinfo[i].has_arg;
-            return;
+            return &opcode_to_disinfo[i];
         }
     }
 
@@ -116,6 +118,52 @@ static int run(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
+static bool is_label_name(char *name)
+{
+    /* always start with a letter */
+    if (!isalpha(*name++))
+        return false;
+    /* everything is alphanumberic */
+    while (*name)
+        if (!isalnum(*name++))
+            return false;
+
+    return false;
+}
+
+static void parse_jump_argument(asm_line *parsed_line, char *arg)
+{
+    if (is_label_name(arg)) {
+        parsed_line->as.jump.label_name = strdup(arg);
+    } else {
+        uint16_t arg_val = 0;
+        if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
+            fprintf(stderr, "Invalid argument supplied: %s\n", arg);
+            exit(EXIT_FAILURE);
+        }
+        parsed_line->as.jump.target = arg_val;
+    }
+}
+
+static void parse_op_argument(asm_line *parsed_line, char *arg)
+{
+    uint16_t arg_val = 0;
+    if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
+        fprintf(stderr, "Invalid argument supplied: %s\n", arg);
+        exit(EXIT_FAILURE);
+    }
+
+    parsed_line->as.op.arg = arg_val;
+}
+
+static void strip_line(char *source, char *target)
+{
+    do
+        while(isspace(*source))
+            source++;
+    while((*target++ = *source++));
+}
+
 static asm_line *parse_line(char *raw_line)
 {
     /* Ignore comments and empty lines*/
@@ -123,56 +171,91 @@ static asm_line *parse_line(char *raw_line)
         return NULL;
 
     char *saveptr = NULL;
-    char *opname = strtok_r(raw_line, " ", &saveptr);
-    if (!opname) {
+    char *opname_raw = strtok_r(raw_line, " ", &saveptr);
+    if (!opname_raw) {
         fprintf(stderr, "Cannot parse string: %s\n", raw_line);
         exit(EXIT_FAILURE);
     }
 
     /* Strip opname, find it's info, put it into bytecode */
+    char opname[MAX_LINE_LEN];
+    strip_line(opname_raw, opname);
 
-    char opname_stripped[MAX_LINE_LEN];
-    char *d = opname_stripped;
+    asm_line *parsed_line = calloc(sizeof(*parsed_line), 1);
 
-    /* Strip */
-    do
-        while(isspace(*opname))
-            opname++;
-    while((*d++ = *opname++));
+    /* Label? */
+    size_t opname_len = strlen(opname);
+    if (opname[opname_len] == ':') {
+        fprintf(stderr, "is label\n");
 
-    asm_line *parsed_line = malloc(sizeof(*parsed_line));
-
-    /* Get info */
-    uint8_t op;
-    bool has_arg;
-    opname_to_opcode(opname_stripped, &op, &has_arg);
-    parsed_line->kind = OP_KIND;
-    parsed_line->as.op.opcode = op;
-    parsed_line->as.op.has_arg = has_arg;
-    parsed_line->next = NULL;
-
-    /* See if there an immediate arg left on the line to be put into bytecode */
-    for (;;) {
+        /* Cannot have any more args */
         char *arg = strtok_r(NULL, " ", &saveptr);
-        if (!arg && has_arg) {
-            fprintf(stderr, "Not enough arguments supplied: %s\n", raw_line);
-            exit(EXIT_FAILURE);
-        } else if (arg && !has_arg) {
-            fprintf(stderr, "Too many arguments supplied: %s\n", raw_line);
-            exit(EXIT_FAILURE);
-        } else if (!arg && !has_arg) {
-            /* This is fine */
-            break;
-        }
-
-        uint16_t arg_val = 0;
-        if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
-            fprintf(stderr, "Invalid argument supplied: %s\n", arg);
+        if (arg) {
+            fprintf(stderr, "Labels do not have arguments: %s\n", raw_line);
             exit(EXIT_FAILURE);
         }
 
-        parsed_line->as.op.arg = arg_val;
-        has_arg = false;
+        /* Strip the colon */
+        opname[opname_len] = '\0';
+
+        parsed_line->kind = LABEL_KIND;
+        parsed_line->as.label.label_name = strdup(opname);
+
+    } else {
+        /* Either an op or a jump */
+
+        /* Get info */
+        uint8_t op;
+        const opinfo *info = opname_to_opcode_info(opname, &op);
+
+        if (info->is_jump) {
+            parsed_line->kind = JUMP_KIND;
+            parsed_line->as.jump.opcode = op;
+
+            /* See if there an immediate arg left on the line to be put into bytecode */
+            bool should_get_arg = true;
+            for (;;) {
+                char *arg = strtok_r(NULL, " ", &saveptr);
+                if (!arg && should_get_arg) {
+                    fprintf(stderr, "Not enough arguments supplied: %s\n", raw_line);
+                    exit(EXIT_FAILURE);
+                } else if (arg && !should_get_arg) {
+                    fprintf(stderr, "Too many arguments supplied: %s\n", raw_line);
+                    exit(EXIT_FAILURE);
+                } else if (!arg && !should_get_arg) {
+                    /* This is fine */
+                    break;
+                }
+
+                parse_jump_argument(parsed_line, arg);
+
+                should_get_arg = false;
+            }
+        } else {
+            parsed_line->kind = OP_KIND;
+            parsed_line->as.op.opcode = op;
+            parsed_line->as.op.has_arg = info->has_arg;
+
+            /* See if there an immediate arg left on the line to be put into bytecode */
+            bool should_get_arg = info->has_arg;
+            for (;;) {
+                char *arg = strtok_r(NULL, " ", &saveptr);
+                if (!arg && should_get_arg) {
+                    fprintf(stderr, "Not enough arguments supplied: %s\n", raw_line);
+                    exit(EXIT_FAILURE);
+                } else if (arg && !should_get_arg) {
+                    fprintf(stderr, "Too many arguments supplied: %s\n", raw_line);
+                    exit(EXIT_FAILURE);
+                } else if (!arg && !should_get_arg) {
+                    /* This is fine */
+                    break;
+                }
+
+                parse_op_argument(parsed_line, arg);
+
+                should_get_arg = false;
+            }
+        }
     }
 
     return parsed_line;
@@ -188,6 +271,16 @@ static size_t assemble_line(asm_line *line, uint8_t *bytecode, size_t pc)
             bytecode[pc++] = (arg & 0xff00) >> 8;
             bytecode[pc++] = (arg & 0x00ff);
         }
+        break;
+    }
+    case LABEL_KIND:{
+        break;
+    }
+    case JUMP_KIND:{
+        bytecode[pc++] = line->as.jump.opcode;
+        uint16_t target = line->as.jump.target;
+        bytecode[pc++] = (target & 0xff00) >> 8;
+        bytecode[pc++] = (target & 0x00ff);
         break;
     }
     default:{
@@ -206,34 +299,31 @@ static uint8_t *assemble(const char *path, size_t *bytecode_len)
         exit(EXIT_FAILURE);
     }
 
-    uint8_t *bytecode = malloc(MAX_CODE_LEN);
+    /* Parse lines */
+    char line_buf[MAX_LINE_LEN];
+    asm_line *lines = NULL;
+    asm_line **list_tail = &lines;
+    while (fgets(line_buf, MAX_LINE_LEN, file)) {
+        asm_line *line = parse_line(line_buf);
+        if (!line)
+            continue;
+        *list_tail = line;
+        list_tail = &line->next;
+    }
+    fclose(file);
+
+    /* Compile lines */
+    uint8_t *bytecode = calloc(MAX_CODE_LEN, 1);
     if (!bytecode) {
         fprintf(stderr, "Failed to allocate memory\n");
         exit(EXIT_FAILURE);
     }
 
-    /* Parse lines */
-    char line_buf[MAX_LINE_LEN];
-    asm_line *lines_list = NULL;
-    asm_line *prev_line = NULL;
-    while (fgets(line_buf, MAX_LINE_LEN, file)) {
-        asm_line *line = parse_line(line_buf);
-        if (!line)
-            continue;
-        if (!lines_list)
-            lines_list = line;
-        else
-            prev_line->next = line;
-        prev_line = line;
-    }
-
-    /* Compile lines */
     size_t pc = 0;
-    for (asm_line *line = lines_list; line; line = line->next)
+    for (asm_line *line = lines; line; line = line->next)
         pc = assemble_line(line, bytecode, pc);
     *bytecode_len = pc;
 
-    fclose(file);
     return bytecode;
 }
 
