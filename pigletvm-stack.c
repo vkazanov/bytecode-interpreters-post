@@ -62,6 +62,11 @@ interpret_result vm_interpret(uint8_t *bytecode)
             vm_stack_push(arg);
             break;
         }
+        case OP_DISCARD: {
+            /* get the argument, push it onto stack */
+            vm_stack_pop();
+            break;
+        }
         case OP_ADD: {
             /* Pop 2 values, add 'em, push the result back to the stack */
             uint64_t arg_right = vm_stack_pop();

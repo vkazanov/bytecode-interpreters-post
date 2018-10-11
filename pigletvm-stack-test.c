@@ -23,6 +23,22 @@ int main(int argc, char *argv[])
     }
 
     {
+        /* Push and discard the result */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(5),
+            OP_PUSHI, ENCODE_ARG(7),
+            OP_DISCARD,
+            OP_POP_RES,
+            OP_DONE
+        };
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 5);
+    }
+
+    {
         /* Addition */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(5), OP_ADD, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);

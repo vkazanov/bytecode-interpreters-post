@@ -13,6 +13,8 @@ typedef enum {
     /* push the immediate argument onto the stack */
     OP_PUSHI,
     /* pop 2 values from the stack, add and push the result onto the stack */
+    OP_DISCARD,
+    /* pop a value of the top of the stack */
     OP_ADD,
     /* pop 2 values from the stack, subtract and push the result onto the stack */
     OP_SUB,

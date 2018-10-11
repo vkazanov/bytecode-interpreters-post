@@ -22,7 +22,7 @@
 
   - [X] asm/disasm update
 
-  - [ ] JUMP_IF_TRUE/JUMP_IF_FALSE
+  - [X] JUMP_IF_TRUE/JUMP_IF_FALSE
 
   - [ ] метки в ассемблере (создание и использование в JUMP-ах)
 
