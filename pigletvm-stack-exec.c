@@ -91,7 +91,7 @@ static int run(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
-static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
+static size_t assemble_line(char *line, uint8_t *bytecode, size_t pc)
 {
     /* Ignore comments and empty lines*/
     if (line[0] == '#' || line[0] == '\n')
@@ -148,7 +148,7 @@ static size_t compile_line(char *line, uint8_t *bytecode, size_t pc)
     return pc;
 }
 
-static uint8_t *compile_file(const char *path, size_t *bytecode_len)
+static uint8_t *assemble(const char *path, size_t *bytecode_len)
 {
     FILE *file = fopen(path, "r");
     if (file == NULL) {
@@ -165,7 +165,7 @@ static uint8_t *compile_file(const char *path, size_t *bytecode_len)
     size_t pc = 0;
     char line_buf[MAX_LINE_LEN];
     while (fgets(line_buf, MAX_LINE_LEN, file))
-        pc = compile_line(line_buf, bytecode, pc);
+        pc = assemble_line(line_buf, bytecode, pc);
     *bytecode_len = pc;
 
     fclose(file);
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
         const char *output_path = argv[3];
 
         size_t bytecode_len = 0;
-        uint8_t *bytecode = compile_file(input_path, &bytecode_len);
+        uint8_t *bytecode = assemble(input_path, &bytecode_len);
         write_file(bytecode, bytecode_len, output_path);
 
         res = EXIT_SUCCESS;
