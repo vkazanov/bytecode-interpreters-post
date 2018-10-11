@@ -98,9 +98,23 @@ interpret_result vm_interpret(uint8_t *bytecode)
             break;
         }
         case OP_JUMP:{
-            /* Use arg  */
-            uint16_t arg = PEEK_ARG();
-            vm.ip = bytecode + arg;
+            /* Use arg as a jump target  */
+            uint16_t target = PEEK_ARG();
+            vm.ip = bytecode + target;
+            break;
+        }
+        case OP_JUMP_IF_TRUE:{
+            /* Use arg as a jump target  */
+            uint16_t target = NEXT_ARG();
+            if (vm_stack_pop())
+                vm.ip = bytecode + target;
+            break;
+        }
+        case OP_JUMP_IF_FALSE:{
+            /* Use arg as a jump target  */
+            uint16_t target = NEXT_ARG();
+            if (!vm_stack_pop())
+                vm.ip = bytecode + target;
             break;
         }
         case OP_EQUAL:{

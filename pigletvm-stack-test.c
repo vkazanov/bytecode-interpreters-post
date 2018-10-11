@@ -116,6 +116,94 @@ int main(int argc, char *argv[])
     }
 
     {
+        /* Jump if true, with condition positive */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(13), /* result to be returned */
+            OP_PUSHI, ENCODE_ARG(1),  /* condition to be checked */
+            OP_JUMP_IF_TRUE, ENCODE_ARG(12),
+
+            /* to be skipped */
+            OP_PUSHI, ENCODE_ARG(2),
+
+            /* jump here if true (byte No 12)*/
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 13);
+    }
+
+    {
+        /* Jump if true, with condition negative */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(13),
+            OP_PUSHI, ENCODE_ARG(0),  /* condition to be checked */
+            OP_JUMP_IF_TRUE, ENCODE_ARG(12),
+
+            /* to be executed */
+            OP_PUSHI, ENCODE_ARG(2),  /* result to be returned */
+
+            /* jump here if true (byte No 12)*/
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 2);
+    }
+
+    {
+        /* Jump if false, with condition negative */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(13), /* result to be returned */
+            OP_PUSHI, ENCODE_ARG(0),  /* condition to be checked */
+            OP_JUMP_IF_FALSE, ENCODE_ARG(12),
+
+            /* to be skipped */
+            OP_PUSHI, ENCODE_ARG(2),
+
+            /* jump here if true (byte No 12)*/
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 13);
+    }
+
+    {
+        /* Jump if false, with condition positive */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(13),
+            OP_PUSHI, ENCODE_ARG(1),  /* condition to be checked */
+            OP_JUMP_IF_FALSE, ENCODE_ARG(12),
+
+            /* to be skipped */
+            OP_PUSHI, ENCODE_ARG(2),  /* result to be returned */
+
+            /* jump here if true (byte No 12)*/
+            OP_POP_RES,
+            OP_DONE
+        };
+
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 2);
+    }
+
+    {
         /* equality test 1 */
         uint8_t code[] = {
             OP_PUSHI, ENCODE_ARG(2),

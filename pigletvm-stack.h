@@ -22,6 +22,10 @@ typedef enum {
     OP_MUL,
     /* jump to an absolute bytecode address (the immediate argument) */
     OP_JUMP,
+    /* pop the top of the stack, jump to an absolute bytecode address if true */
+    OP_JUMP_IF_TRUE,
+    /* pop the top of the stack, jump to an absolute bytecode address if false */
+    OP_JUMP_IF_FALSE,
     /* equality ops: pop two values from the stack, compare then, push the result (0/1) back onto
      * the stack */
     OP_EQUAL,
