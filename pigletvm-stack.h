@@ -12,6 +12,8 @@ typedef enum {
     OP_ABORT,
     /* push the immediate argument onto the stack */
     OP_PUSHI,
+    /* check the current top of the stack and add a copy on top of it */
+    OP_DUP,
     /* pop 2 values from the stack, add and push the result onto the stack */
     OP_DISCARD,
     /* pop a value of the top of the stack */

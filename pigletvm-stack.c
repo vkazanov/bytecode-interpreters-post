@@ -5,7 +5,7 @@
 #include "pigletvm-stack.h"
 
 #define STACK_MAX 256
-#define MEMORY_SIZE 256
+#define MEMORY_SIZE 65536
 
 static struct {
     uint8_t *ip;
@@ -40,6 +40,11 @@ static inline uint64_t vm_stack_pop(void)
     return *vm.stack_top;
 }
 
+static inline uint64_t vm_stack_peek(void)
+{
+    return *(vm.stack_top - 1);
+}
+
 interpret_result vm_interpret(uint8_t *bytecode)
 {
 #define NEXT_OP()                                               \
@@ -60,6 +65,11 @@ interpret_result vm_interpret(uint8_t *bytecode)
             /* get the argument, push it onto stack */
             uint16_t arg = NEXT_ARG();
             vm_stack_push(arg);
+            break;
+        }
+        case OP_DUP:{
+            /* duplicate the top of the stack */
+            vm_stack_push(vm_stack_peek());
             break;
         }
         case OP_DISCARD: {

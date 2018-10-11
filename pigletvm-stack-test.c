@@ -23,6 +23,23 @@ int main(int argc, char *argv[])
     }
 
     {
+        /* Push and duplicate the result, check if both args made it */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(6),
+            OP_PUSHI, ENCODE_ARG(5),
+            OP_DUP,
+            OP_ADD,
+            OP_POP_RES,
+            OP_DONE
+        };
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 10);
+    }
+
+    {
         /* Push and discard the result */
         uint8_t code[] = {
             OP_PUSHI, ENCODE_ARG(5),
