@@ -177,17 +177,20 @@ static asm_line *parse_line(char *raw_line)
         exit(EXIT_FAILURE);
     }
 
+    /* Allocate the target line */
+    asm_line *parsed_line = calloc(sizeof(*parsed_line), 1);
+    if (!parsed_line) {
+        fprintf(stderr, "Memory allocation failure\n ");
+        exit(EXIT_FAILURE);
+    }
+
     /* Strip opname, find it's info, put it into bytecode */
     char opname[MAX_LINE_LEN];
     strip_line(opname_raw, opname);
 
-    asm_line *parsed_line = calloc(sizeof(*parsed_line), 1);
-
     /* Label? */
-    size_t opname_len = strlen(opname);
+    size_t opname_len = strlen(opname) - 1;
     if (opname[opname_len] == ':') {
-        fprintf(stderr, "is label\n");
-
         /* Cannot have any more args */
         char *arg = strtok_r(NULL, " ", &saveptr);
         if (arg) {
