@@ -67,6 +67,34 @@ interpret_result vm_interpret(uint8_t *bytecode)
             vm_stack_push(arg);
             break;
         }
+        case OP_LOADI: {
+            /* get the argument, use it to get a value onto stack */
+            uint16_t addr = NEXT_ARG();
+            uint64_t val = vm.memory[addr];
+            vm_stack_push(val);
+            break;
+        }
+        case OP_STOREI: {
+            /* get the argument, use it to get a value of the stack into a memory cell */
+            uint16_t addr = NEXT_ARG();
+            uint64_t val = vm_stack_pop();
+            vm.memory[addr] = val;
+            break;
+        }
+        case OP_LOAD: {
+            /* pop an address, use it to get a value onto stack */
+            uint16_t addr = vm_stack_pop();
+            uint64_t val = vm.memory[addr];
+            vm_stack_push(val);
+            break;
+        }
+        case OP_STORE: {
+            /* pop a value, pop an adress, put a value into an address */
+            uint64_t val = vm_stack_pop();
+            uint16_t addr = vm_stack_pop();
+            vm.memory[addr] = val;
+            break;
+        }
         case OP_DUP:{
             /* duplicate the top of the stack */
             vm_stack_push(vm_stack_peek());

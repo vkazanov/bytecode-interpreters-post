@@ -40,6 +40,40 @@ int main(int argc, char *argv[])
     }
 
     {
+        /* Store a value into memory, load it, the pop */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(111),
+            OP_STOREI, ENCODE_ARG(5),
+            OP_LOADI, ENCODE_ARG(5),
+            OP_POP_RES,
+            OP_DONE
+        };
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 111);
+    }
+
+    {
+        /* Store a value into memory, load it, the pop */
+        uint8_t code[] = {
+            OP_PUSHI, ENCODE_ARG(10), /* address */
+            OP_DUP,                    /* address for loading */
+            OP_PUSHI, ENCODE_ARG(112), /* value */
+            OP_STORE,
+            OP_LOAD,
+            OP_POP_RES,
+            OP_DONE
+        };
+        interpret_result result = vm_interpret(code);
+        printf("vm state: %" PRIu64 "\n", vm_get_result());
+
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 112);
+    }
+
+    {
         /* Push and discard the result */
         uint8_t code[] = {
             OP_PUSHI, ENCODE_ARG(5),

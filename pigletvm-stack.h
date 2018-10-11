@@ -10,12 +10,25 @@ typedef enum interpret_result {
 typedef enum {
     /* just a sentinel ending the instruction stream, should never be reached by the interpreter */
     OP_ABORT,
+
     /* push the immediate argument onto the stack */
     OP_PUSHI,
+    /* load a value onto the stack from a memory cell addressed by an immediate argument  */
+    OP_LOADI,
+    /* pop a value and store it into a memory cell addressed by an immediate argument  */
+    OP_STOREI,
+    /* pop an address of the stack, use it to get a value from a memory cell */
+    OP_LOAD,
+    /* pop an address of the stack, pop a value from the stack, store into the address */
+    OP_STORE,
+
+
     /* check the current top of the stack and add a copy on top of it */
     OP_DUP,
     /* pop 2 values from the stack, add and push the result onto the stack */
     OP_DISCARD,
+
+
     /* pop a value of the top of the stack */
     OP_ADD,
     /* pop 2 values from the stack, subtract and push the result onto the stack */
@@ -24,12 +37,15 @@ typedef enum {
     OP_DIV,
     /* pop 2 values from the stack, multiply and push the result onto the stack */
     OP_MUL,
+
+
     /* jump to an absolute bytecode address (the immediate argument) */
     OP_JUMP,
     /* pop the top of the stack, jump to an absolute bytecode address if true */
     OP_JUMP_IF_TRUE,
     /* pop the top of the stack, jump to an absolute bytecode address if false */
     OP_JUMP_IF_FALSE,
+
     /* equality ops: pop two values from the stack, compare then, push the result (0/1) back onto
      * the stack */
     OP_EQUAL,
@@ -37,6 +53,7 @@ typedef enum {
     OP_LESS_OR_EQUAL,
     OP_GREATER,
     OP_GREATER_OR_EQUAL,
+
     /* pop the top of the stack and set it as execution result */
     OP_POP_RES,
     /* properly stop execution */

@@ -25,6 +25,10 @@ typedef struct opinfo {
 opinfo opcode_to_disinfo[] = {
     [OP_ABORT] = {0, "ABORT", 0},
     [OP_PUSHI] = {1, "PUSHI", 0},
+    [OP_LOADI] = {1, "LOADI", 0},
+    [OP_STOREI] = {1, "STOREI", 0},
+    [OP_LOAD] = {0, "LOAD", 0},
+    [OP_STORE] = {0, "STORE", 0},
     [OP_DUP] = {0, "DUP", 0},
     [OP_DISCARD] = {0, "DISCARD", 0},
     [OP_ADD] = {0, "ADD", 0},
