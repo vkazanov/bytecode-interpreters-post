@@ -60,6 +60,7 @@ typedef struct asm_line {
             char *label_name;
         } label;
     } as;
+
     /* a list of lines */
     struct asm_line *next;
 } asm_line;
@@ -115,16 +116,16 @@ static int run(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
-static asm_line *parse_line(char *line)
+static asm_line *parse_line(char *raw_line)
 {
     /* Ignore comments and empty lines*/
-    if (line[0] == '#' || line[0] == '\n')
+    if (raw_line[0] == '#' || raw_line[0] == '\n')
         return NULL;
 
     char *saveptr = NULL;
-    char *opname = strtok_r(line, " ", &saveptr);
+    char *opname = strtok_r(raw_line, " ", &saveptr);
     if (!opname) {
-        fprintf(stderr, "Cannot parse string: %s\n", line);
+        fprintf(stderr, "Cannot parse string: %s\n", raw_line);
         exit(EXIT_FAILURE);
     }
 
@@ -139,7 +140,7 @@ static asm_line *parse_line(char *line)
             opname++;
     while((*d++ = *opname++));
 
-    asm_line *parsed_line = malloc(sizeof(*line));
+    asm_line *parsed_line = malloc(sizeof(*parsed_line));
 
     /* Get info */
     uint8_t op;
@@ -148,15 +149,16 @@ static asm_line *parse_line(char *line)
     parsed_line->kind = OP_KIND;
     parsed_line->as.op.opcode = op;
     parsed_line->as.op.has_arg = has_arg;
+    parsed_line->next = NULL;
 
     /* See if there an immediate arg left on the line to be put into bytecode */
     for (;;) {
         char *arg = strtok_r(NULL, " ", &saveptr);
         if (!arg && has_arg) {
-            fprintf(stderr, "Not enough arguments supplied: %s\n", line);
+            fprintf(stderr, "Not enough arguments supplied: %s\n", raw_line);
             exit(EXIT_FAILURE);
         } else if (arg && !has_arg) {
-            fprintf(stderr, "Too many arguments supplied: %s\n", line);
+            fprintf(stderr, "Too many arguments supplied: %s\n", raw_line);
             exit(EXIT_FAILURE);
         } else if (!arg && !has_arg) {
             /* This is fine */
@@ -178,11 +180,20 @@ static asm_line *parse_line(char *line)
 
 static size_t assemble_line(asm_line *line, uint8_t *bytecode, size_t pc)
 {
-    bytecode[pc++] = line->as.op.opcode;
-    if (line->as.op.has_arg) {
-        uint16_t arg = line->as.op.arg;
-        bytecode[pc++] = (arg & 0xff00) >> 8;
-        bytecode[pc++] = (arg & 0x00ff);
+    switch (line->kind) {
+    case OP_KIND:{
+        bytecode[pc++] = line->as.op.opcode;
+        if (line->as.op.has_arg) {
+            uint16_t arg = line->as.op.arg;
+            bytecode[pc++] = (arg & 0xff00) >> 8;
+            bytecode[pc++] = (arg & 0x00ff);
+        }
+        break;
+    }
+    default:{
+        fprintf(stderr, "Unknown op kind: %d\n", line->kind);
+        exit(EXIT_FAILURE);
+    }
     }
     return pc;
 }
@@ -204,18 +215,16 @@ static uint8_t *assemble(const char *path, size_t *bytecode_len)
     /* Parse lines */
     char line_buf[MAX_LINE_LEN];
     asm_line *lines_list = NULL;
-    asm_line *last_line = NULL;
+    asm_line *prev_line = NULL;
     while (fgets(line_buf, MAX_LINE_LEN, file)) {
         asm_line *line = parse_line(line_buf);
         if (!line)
             continue;
-        if (!lines_list) {
+        if (!lines_list)
             lines_list = line;
-            last_line = line;
-        } else {
-            last_line->next = line;
-            last_line = line;
-        }
+        else
+            prev_line->next = line;
+        prev_line = line;
     }
 
     /* Compile lines */
