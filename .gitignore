@@ -57,8 +57,7 @@ dkms.conf
 *.odt
 
 # pigletvm
-pvm
-pvm-test
+pigletvm
 *.pvm
 *.bin
 *-test

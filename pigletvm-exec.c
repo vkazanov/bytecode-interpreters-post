@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#include "pigletvm-stack.h"
+#include "pigletvm.h"
 
 #define MAX_CODE_LEN 4096
 #define MAX_LINE_LEN 256

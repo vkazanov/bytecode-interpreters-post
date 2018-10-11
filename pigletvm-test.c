@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pigletvm-stack.h"
+#include "pigletvm.h"
 
 
 int main(int argc, char *argv[])

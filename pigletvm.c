@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "pigletvm-stack.h"
+#include "pigletvm.h"
 
 #define STACK_MAX 256
 #define MEMORY_SIZE 65536
@@ -21,7 +21,7 @@ static struct {
     uint64_t result;
 } vm;
 
-static inline void vm_reset(void)
+static void vm_reset(void)
 {
     puts("Reset vm state");
     vm = (typeof(vm)) { NULL };

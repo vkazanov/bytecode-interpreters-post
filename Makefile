@@ -3,7 +3,7 @@ CFLAGS = -std=gnu11
 
 INTERPRETERS = basic-switch immediate-arg stack-machine register-machine regexp
 
-all: $(INTERPRETERS)
+all: $(INTERPRETERS) pigletvm
 
 test: all
 	$(foreach interpr,$(INTERPRETERS),./$(interpr);)
@@ -11,7 +11,14 @@ test: all
 %: interpreter-%.c
 	$(CC) $(CFLAGS) $< -o $@
 
-clean:
-	rm -vf $(INTERPRETERS)
+pigletvm: pigletvm.c pigletvm-exec.c
+	$(CC) $(CFLAGS) $^ -o $@
 
-.PHONY: all clean
+pigletvm-test: pigletvm.c pigletvm-test.c
+	$(CC) $(CFLAGS) $^ -o $@
+	./pigletvm-test
+
+clean:
+	rm -vf $(INTERPRETERS) pigletvm pigletvm-test
+
+.PHONY: all clean pigletvm-test
