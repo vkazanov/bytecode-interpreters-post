@@ -3,11 +3,23 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "pigletvm.h"
 
 #define MAX_CODE_LEN 4096
 #define MAX_LINE_LEN 256
+
+#define TIMER_DEF(start_var,end_var) struct timeval (start_var); struct timeval (end_var)
+#define TIMER_START(start_var) gettimeofday(&(start_var), NULL)
+#define TIMER_END(start_var,end_var,msg)                                \
+    do{                                                                 \
+        gettimeofday(&(end_var), NULL);                                 \
+        fprintf(stderr, "PROFILE: %s took %ldms", msg,                  \
+                (((end_var).tv_sec * 1000000L + (end_var).tv_usec) -    \
+                   ((start_var).tv_sec * 1000000L + (start_var).tv_usec)) / 1000); \
+    } while (0);
 
 static char *error_to_msg[] = {
     [SUCCESS] = "success",
@@ -450,7 +462,7 @@ static void write_file(const uint8_t *bytecode, const size_t bytecode_len, const
 int main(int argc, char *argv[])
 {
     if (argc < 3) {
-        fprintf(stderr, "Usage: <dis|run|asm> <path/to/bytecode> [<path/to/output>]\n");
+        fprintf(stderr, "Usage: <asm|dis|run|runtimes> [arg1 [arg2 ...]]\n");
         exit(EXIT_FAILURE);
     }
 
@@ -478,7 +490,36 @@ int main(int argc, char *argv[])
         const char *path = argv[2];
         uint8_t *bytecode = read_file(path);
 
+        TIMER_DEF(start_time, end_time);
+        TIMER_START(start_time);
+
         res = run(bytecode);
+
+        TIMER_END(start_time, end_time, "code finished");
+
+        free(bytecode);
+    } else if (0 == strcmp(cmd, "runtimes")) {
+        if (argc != 4) {
+            fprintf(stderr, "Usage: runtimes <path/to/bytecode> <number of iterations>\n");
+            exit(EXIT_FAILURE);
+        }
+
+        const char *path = argv[2];
+        uint8_t *bytecode = read_file(path);
+
+        int num_iterations = 0;
+        if (sscanf(argv[3], "%d", &num_iterations) != 1) {
+            fprintf(stderr, "Failed to parse number of iterations: %s\n", argv[3]);
+            exit(EXIT_FAILURE);
+        };
+
+        TIMER_DEF(start_time, end_time);
+        TIMER_START(start_time);
+
+        for (int i = 0; i < num_iterations; i++)
+            res = run(bytecode);
+
+        TIMER_END(start_time, end_time, "code finished");
 
         free(bytecode);
     } else if (0 == strcmp(cmd, "asm")) {
