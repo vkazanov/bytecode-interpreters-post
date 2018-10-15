@@ -101,7 +101,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
             break;
         }
         case OP_DISCARD: {
-            /* get the argument, push it onto stack */
+            /* discard the top of the stack */
             vm_stack_pop();
             break;
         }
