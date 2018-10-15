@@ -5,7 +5,7 @@ PUSHI 2
 DUP
 STOREI 0
 
-# integer marking loop (do {..} while n < 65536)
+# routine: mark non-primes loop (do {..} while n < 65536)
 mark:
 
 # stack: addr=n
@@ -37,7 +37,7 @@ JUMP_IF_FALSE markloop
 DISCARD
 # stack:
 
-# find the next possible prime
+# routine: find the next possible prime number while ignoring marked ones
 incrementandcheck:
 
 LOADI 0
@@ -66,6 +66,7 @@ LOADI 0
 # stack: addr=i+1
 JUMP mark
 
+# routine: print prime numbers
 print:
 
 # stack: addr=i+1
@@ -101,5 +102,6 @@ PRINT
 JUMP printloop
 
 done:
+DISCARD
 
 DONE
