@@ -53,6 +53,12 @@ interpret_result vm_interpret(uint8_t *bytecode)
     ((void)(vm.ip += 2), (vm.ip[-2] << 8) + vm.ip[-1])
 #define PEEK_ARG()                                      \
     ((vm.ip[0] << 8) + vm.ip[1])
+#define POP()                                   \
+    (*(--vm.stack_top))
+#define PUSH(val)                               \
+    (*vm.stack_top = (val), vm.stack_top++)
+#define PEEK()                               \
+    (*(vm.stack_top - 1))
 
     vm_reset();
 
@@ -64,80 +70,80 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_PUSHI: {
             /* get the argument, push it onto stack */
             uint16_t arg = NEXT_ARG();
-            vm_stack_push(arg);
+            PUSH(arg);
             break;
         }
         case OP_LOADI: {
             /* get the argument, use it to get a value onto stack */
             uint16_t addr = NEXT_ARG();
             uint64_t val = vm.memory[addr];
-            vm_stack_push(val);
+            PUSH(val);
             break;
         }
         case OP_STOREI: {
             /* get the argument, use it to get a value of the stack into a memory cell */
             uint16_t addr = NEXT_ARG();
-            uint64_t val = vm_stack_pop();
+            uint64_t val = POP();
             vm.memory[addr] = val;
             break;
         }
         case OP_LOAD: {
             /* pop an address, use it to get a value onto stack */
-            uint16_t addr = vm_stack_pop();
+            uint16_t addr = POP();
             uint64_t val = vm.memory[addr];
-            vm_stack_push(val);
+            PUSH(val);
             break;
         }
         case OP_STORE: {
             /* pop a value, pop an adress, put a value into an address */
-            uint64_t val = vm_stack_pop();
-            uint16_t addr = vm_stack_pop();
+            uint64_t val = POP();
+            uint16_t addr = POP();
             vm.memory[addr] = val;
             break;
         }
         case OP_DUP:{
             /* duplicate the top of the stack */
-            vm_stack_push(vm_stack_peek());
+            PUSH(PEEK());
             break;
         }
         case OP_DISCARD: {
             /* discard the top of the stack */
-            vm_stack_pop();
+            POP();
             break;
         }
         case OP_ADD: {
             /* Pop 2 values, add 'em, push the result back to the stack */
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left + arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_SUB: {
             /* Pop 2 values, subtract 'em, push the result back to the stack */
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left - arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_DIV: {
             /* Pop 2 values, divide 'em, push the result back to the stack */
-            uint64_t arg_right = vm_stack_pop();
+            uint64_t arg_right = POP();
             /* Don't forget to handle the div by zero error */
             if (arg_right == 0)
                 return ERROR_DIVISION_BY_ZERO;
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left / arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_MUL: {
             /* Pop 2 values, multiply 'em, push the result back to the stack */
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left * arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_JUMP:{
@@ -149,55 +155,55 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_JUMP_IF_TRUE:{
             /* Use arg as a jump target  */
             uint16_t target = NEXT_ARG();
-            if (vm_stack_pop())
+            if (POP())
                 vm.ip = bytecode + target;
             break;
         }
         case OP_JUMP_IF_FALSE:{
             /* Use arg as a jump target  */
             uint16_t target = NEXT_ARG();
-            if (!vm_stack_pop())
+            if (!POP())
                 vm.ip = bytecode + target;
             break;
         }
         case OP_EQUAL:{
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left == arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_LESS:{
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left < arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_LESS_OR_EQUAL:{
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left <= arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_GREATER:{
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left > arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_GREATER_OR_EQUAL:{
-            uint64_t arg_right = vm_stack_pop();
-            uint64_t arg_left = vm_stack_pop();
+            uint64_t arg_right = POP();
+            uint64_t arg_left = POP();
             uint64_t res = arg_left >= arg_right;
-            vm_stack_push(res);
+            PUSH(res);
             break;
         }
         case OP_POP_RES: {
             /* Pop the top of the stack, set it as a result value */
-            uint64_t res = vm_stack_pop();
+            uint64_t res = POP();
             vm.result = res;
             break;
         }
@@ -205,7 +211,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
             return SUCCESS;
         }
         case OP_PRINT:{
-            uint64_t arg = vm_stack_pop();
+            uint64_t arg = POP();
             printf("%" PRIu64 "\n", arg);
             break;
         }
@@ -222,6 +228,9 @@ interpret_result vm_interpret(uint8_t *bytecode)
 #undef NEXT_ARG
 #undef PEEK_ARG
 #undef NEXT_OP
+#undef POP
+#undef PUSH
+#undef PEEK
 }
 
 uint64_t vm_get_result(void)
