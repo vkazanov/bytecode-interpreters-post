@@ -134,7 +134,8 @@ static int disassemble(uint8_t *bytecode)
 
 static int run(uint8_t *bytecode)
 {
-    interpret_result res = vm_interpret(bytecode);
+    interpret_result res = vm_interpret_threaded(bytecode);
+    /* interpret_result res = vm_interpret(bytecode); */
     if (res != SUCCESS) {
         fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
         return EXIT_FAILURE;
