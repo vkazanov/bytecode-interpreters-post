@@ -15,6 +15,9 @@ typedef enum {
     OP_PUSHI,
     /* load a value onto the stack from a memory cell addressed by an immediate argument  */
     OP_LOADI,
+    /* load a value onto the stack from a memory cell addressed by an immediate argument, add it to
+     * the top of the stack */
+    OP_LOADADDI,
     /* pop a value and store it into a memory cell addressed by an immediate argument  */
     OP_STOREI,
     /* pop an address of the stack, use it to get a value from a memory cell */
@@ -55,6 +58,7 @@ typedef enum {
     OP_LESS_OR_EQUAL,
     OP_GREATER,
     OP_GREATER_OR_EQUAL,
+    OP_GREATER_OR_EQUALI,
 
     /* pop the top of the stack and set it as execution result */
     OP_POP_RES,

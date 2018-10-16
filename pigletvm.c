@@ -65,6 +65,13 @@ interpret_result vm_interpret(uint8_t *bytecode)
             PUSH(val);
             break;
         }
+        case OP_LOADADDI: {
+            /* get the argument, add the value from the address to the top of the stack */
+            uint16_t addr = NEXT_ARG();
+            uint64_t val = vm.memory[addr];
+            *TOS_PTR() += val;
+            break;
+        }
         case OP_STOREI: {
             /* get the argument, use it to get a value of the stack into a memory cell */
             uint16_t addr = NEXT_ARG();
@@ -171,6 +178,11 @@ interpret_result vm_interpret(uint8_t *bytecode)
         }
         case OP_GREATER_OR_EQUAL:{
             uint64_t arg_right = POP();
+            *TOS_PTR() = PEEK() >= arg_right;
+            break;
+        }
+        case OP_GREATER_OR_EQUALI:{
+            uint64_t arg_right = NEXT_ARG();
             *TOS_PTR() = PEEK() >= arg_right;
             break;
         }
