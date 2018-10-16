@@ -7,10 +7,26 @@
 #define STACK_MAX 256
 #define MEMORY_SIZE 65536
 
+#define NEXT_OP()                               \
+    (*vm.ip++)
+#define NEXT_ARG()                                      \
+    ((void)(vm.ip += 2), (vm.ip[-2] << 8) + vm.ip[-1])
+#define PEEK_ARG()                              \
+    ((vm.ip[0] << 8) + vm.ip[1])
+#define POP()                                   \
+    (*(--vm.stack_top))
+#define PUSH(val)                               \
+    (*vm.stack_top = (val), vm.stack_top++)
+#define PEEK()                                  \
+    (*(vm.stack_top - 1))
+#define TOS_PTR()                               \
+    (vm.stack_top - 1)
+
+
 static struct {
     uint8_t *ip;
 
-    /* Fixed-size stack */
+        /* Fixed-size stack */
     uint64_t stack[STACK_MAX];
     uint64_t *stack_top;
 
@@ -30,21 +46,6 @@ static void vm_reset(void)
 
 interpret_result vm_interpret(uint8_t *bytecode)
 {
-#define NEXT_OP()                                               \
-    (*vm.ip++)
-#define NEXT_ARG()                                      \
-    ((void)(vm.ip += 2), (vm.ip[-2] << 8) + vm.ip[-1])
-#define PEEK_ARG()                                      \
-    ((vm.ip[0] << 8) + vm.ip[1])
-#define POP()                                   \
-    (*(--vm.stack_top))
-#define PUSH(val)                               \
-    (*vm.stack_top = (val), vm.stack_top++)
-#define PEEK()                               \
-    (*(vm.stack_top - 1))
-#define TOS_PTR()                               \
-    (vm.stack_top - 1)
-
     vm_reset();
 
     puts("Start interpreting");
@@ -209,33 +210,10 @@ interpret_result vm_interpret(uint8_t *bytecode)
     }
 
     return SUCCESS;
-
-#undef NEXT_ARG
-#undef PEEK_ARG
-#undef NEXT_OP
-#undef POP
-#undef PUSH
-#undef PEEK
-#undef TOS_PTR
 }
 
 interpret_result vm_interpret_threaded(uint8_t *bytecode)
 {
-#define NEXT_OP()                               \
-    (*vm.ip++)
-#define NEXT_ARG()                                      \
-    ((void)(vm.ip += 2), (vm.ip[-2] << 8) + vm.ip[-1])
-#define PEEK_ARG()                              \
-    ((vm.ip[0] << 8) + vm.ip[1])
-#define POP()                                   \
-    (*(--vm.stack_top))
-#define PUSH(val)                               \
-    (*vm.stack_top = (val), vm.stack_top++)
-#define PEEK()                                  \
-    (*(vm.stack_top - 1))
-#define TOS_PTR()                               \
-    (vm.stack_top - 1)
-
     vm_reset();
     vm.ip = bytecode;
 
@@ -423,14 +401,6 @@ op_abort: {
     }
 end:
     return SUCCESS;
-
-#undef NEXT_ARG
-#undef PEEK_ARG
-#undef NEXT_OP
-#undef POP
-#undef PUSH
-#undef PEEK
-#undef TOS_PTR
 }
 
 
