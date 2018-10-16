@@ -44,6 +44,7 @@ opinfo opcode_to_disinfo[] = {
     [OP_DUP] = {0, "DUP", 0},
     [OP_DISCARD] = {0, "DISCARD", 0},
     [OP_ADD] = {0, "ADD", 0},
+    [OP_ADDI] = {1, "ADDI", 0},
     [OP_SUB] = {0, "SUB", 0},
     [OP_DIV] = {0, "DIV", 0},
     [OP_MUL] = {0, "MUL", 0},

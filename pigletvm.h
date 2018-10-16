@@ -29,8 +29,10 @@ typedef enum {
     OP_DISCARD,
 
 
-    /* pop a value of the top of the stack */
+    /* pop 2 values, add and push back onto stack  */
     OP_ADD,
+    /* add an immediate value to the top of the stack */
+    OP_ADDI,
     /* pop 2 values from the stack, subtract and push the result onto the stack */
     OP_SUB,
     /* pop 2 values from the stack, divide and push the result onto the stack */

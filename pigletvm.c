@@ -102,6 +102,12 @@ interpret_result vm_interpret(uint8_t *bytecode)
             *TOS_PTR() += arg_right;
             break;
         }
+        case OP_ADDI: {
+            /* Add immediate value to the top of the stack */
+            uint16_t arg_right = NEXT_ARG();
+            *TOS_PTR() += arg_right;
+            break;
+        }
         case OP_SUB: {
             /* Pop 2 values, subtract 'em, push the result back to the stack */
             uint64_t arg_right = POP();

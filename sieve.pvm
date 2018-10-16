@@ -42,9 +42,7 @@ incrementandcheck:
 
 LOADI 0
 # stack: addr=i
-PUSHI 1
-# stack: addr=i|1
-ADD
+ADDI 1
 # stack: addr=i+1
 DUP
 # stack: addr=i+1|addr=i+1
@@ -77,9 +75,7 @@ PUSHI 0
 
 printloop:
 # stack: addr=i
-PUSHI 1
-# stack: addr=i|1
-ADD
+ADDI 1
 # stack: addr=i+1
 DUP
 # stack: addr=i+1|addr=i+1
