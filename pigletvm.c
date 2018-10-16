@@ -42,6 +42,8 @@ interpret_result vm_interpret(uint8_t *bytecode)
     (*vm.stack_top = (val), vm.stack_top++)
 #define PEEK()                               \
     (*(vm.stack_top - 1))
+#define TOS_PTR()                               \
+    (vm.stack_top - 1)
 
     vm_reset();
 
@@ -97,17 +99,13 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_ADD: {
             /* Pop 2 values, add 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left + arg_right;
-            PUSH(res);
+            *TOS_PTR() += arg_right;
             break;
         }
         case OP_SUB: {
             /* Pop 2 values, subtract 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left - arg_right;
-            PUSH(res);
+            *TOS_PTR() -= arg_right;
             break;
         }
         case OP_DIV: {
@@ -116,17 +114,13 @@ interpret_result vm_interpret(uint8_t *bytecode)
             /* Don't forget to handle the div by zero error */
             if (arg_right == 0)
                 return ERROR_DIVISION_BY_ZERO;
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left / arg_right;
-            PUSH(res);
+            *TOS_PTR() /= arg_right;
             break;
         }
         case OP_MUL: {
             /* Pop 2 values, multiply 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left * arg_right;
-            PUSH(res);
+            *TOS_PTR() *= arg_right;
             break;
         }
         case OP_JUMP:{
@@ -151,37 +145,27 @@ interpret_result vm_interpret(uint8_t *bytecode)
         }
         case OP_EQUAL:{
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left == arg_right;
-            PUSH(res);
+            *TOS_PTR() = PEEK() == arg_right;
             break;
         }
         case OP_LESS:{
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left < arg_right;
-            PUSH(res);
+            *TOS_PTR() = PEEK() < arg_right;
             break;
         }
         case OP_LESS_OR_EQUAL:{
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left <= arg_right;
-            PUSH(res);
+            *TOS_PTR() = PEEK() <= arg_right;
             break;
         }
         case OP_GREATER:{
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left > arg_right;
-            PUSH(res);
+            *TOS_PTR() = PEEK() > arg_right;
             break;
         }
         case OP_GREATER_OR_EQUAL:{
             uint64_t arg_right = POP();
-            uint64_t arg_left = POP();
-            uint64_t res = arg_left >= arg_right;
-            PUSH(res);
+            *TOS_PTR() = PEEK() >= arg_right;
             break;
         }
         case OP_POP_RES: {
@@ -214,6 +198,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
 #undef POP
 #undef PUSH
 #undef PEEK
+#undef TOS_PTR
 }
 
 uint64_t vm_get_result(void)
