@@ -760,7 +760,7 @@ static void vm_trace_reset(uint8_t *bytecode)
         vm_trace.trace_cache[trace_i]->handler = handler_trace_compile;
 }
 
-interpret_result vm_trace_interpret(uint8_t *bytecode)
+interpret_result vm_interpret_trace(uint8_t *bytecode)
 {
     vm_trace_reset(bytecode);
 
@@ -770,4 +770,9 @@ interpret_result vm_trace_interpret(uint8_t *bytecode)
     }
 
     return vm_trace.error;
+}
+
+uint64_t vm_trace_get_result(void)
+{
+    return vm_trace.result;
 }

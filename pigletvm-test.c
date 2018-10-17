@@ -23,6 +23,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 5);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 5);
     }
 
     {
@@ -42,6 +46,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 10);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 10);
     }
 
     {
@@ -60,6 +68,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 111);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 111);
     }
 
     {
@@ -80,6 +92,10 @@ int main(int argc, char *argv[])
         vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 112);
+
+        vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 112);
     }
 
     {
@@ -98,6 +114,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 5);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 5);
     }
 
     {
@@ -110,6 +130,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 15);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 15);
     }
 
     {
@@ -122,6 +146,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 4);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 4);
     }
 
     {
@@ -134,14 +162,23 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 2);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 2);
     }
 
     {
         /* Division with error */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(0), OP_DIV, OP_POP_RES, OP_DONE };
+
         interpret_result result = vm_interpret(code);
         assert(result == ERROR_DIVISION_BY_ZERO);
+
         result = vm_interpret_threaded(code);
+        assert(result == ERROR_DIVISION_BY_ZERO);
+
+        result = vm_interpret_trace(code);
         assert(result == ERROR_DIVISION_BY_ZERO);
     }
 
@@ -157,6 +194,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 20);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 20);
     }
 
     {
@@ -177,6 +218,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 28);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 28);
     }
 
     {
@@ -374,7 +419,6 @@ int main(int argc, char *argv[])
 
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
-        assert(vm_get_result() == 1);
     }
 
     {
@@ -393,7 +437,6 @@ int main(int argc, char *argv[])
 
         result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
-        assert(vm_get_result() == 1);
     }
 
     {

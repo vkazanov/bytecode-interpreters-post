@@ -77,3 +77,7 @@ interpret_result vm_interpret(uint8_t *bytecode);
 interpret_result vm_interpret_threaded(uint8_t *bytecode);
 
 uint64_t vm_get_result(void);
+
+interpret_result vm_interpret_trace(uint8_t *bytecode);
+
+uint64_t vm_trace_get_result(void);
