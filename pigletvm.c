@@ -433,6 +433,8 @@ uint64_t vm_get_result(void)
     (*(vm_trace.stack_top - 1))
 #define TOS_PTR()                               \
     (vm_trace.stack_top - 1)
+#define NEXT_HANDLER(code)                      \
+    (((code)++), (code)->handler((code)))
 
 typedef struct scode scode;
 
@@ -465,25 +467,19 @@ static struct {
 
 } vm_trace;
 
-typedef struct opinfo {
-    bool has_arg;
-    trace_op_handler *handler;
-} opinfo;
-
 void op_abort_handler(scode *code)
 {
-    (void) code;
     vm_trace.is_running = false;
     vm_trace.error = ERROR_END_OF_STREAM;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_pushi_handler(scode *code)
 {
     PUSH(code->arg);
 
-    vm_trace.pc += 3;
+    NEXT_HANDLER(code);
 }
 
 void op_loadi_handler(scode *code)
@@ -492,7 +488,7 @@ void op_loadi_handler(scode *code)
     uint64_t val = vm_trace.memory[addr];
     PUSH(val);
 
-    vm_trace.pc += 3;
+    NEXT_HANDLER(code);
 }
 
 void op_loadaddi_handler(scode *code)
@@ -501,7 +497,7 @@ void op_loadaddi_handler(scode *code)
     uint64_t val = vm_trace.memory[addr];
     *TOS_PTR() += val;
 
-    vm_trace.pc += 3;
+    NEXT_HANDLER(code);
 }
 
 void op_storei_handler(scode *code)
@@ -510,53 +506,48 @@ void op_storei_handler(scode *code)
     uint64_t val = POP();
     vm_trace.memory[addr] = val;
 
-    vm_trace.pc += 3;
+    NEXT_HANDLER(code);
 }
 
 void op_load_handler(scode *code)
 {
-    (void) code;
     uint16_t addr = POP();
     uint64_t val = vm_trace.memory[addr];
     PUSH(val);
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 
 }
 
 void op_store_handler(scode *code)
 {
-    (void) code;
     uint64_t val = POP();
     uint16_t addr = POP();
     vm_trace.memory[addr] = val;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_dup_handler(scode *code)
 {
-    (void) code;
     PUSH(PEEK());
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_discard_handler(scode *code)
 {
-    (void) code;
     (void) POP();
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_add_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() += arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_addi_handler(scode *code)
@@ -564,40 +555,38 @@ void op_addi_handler(scode *code)
     uint16_t arg_right = code->arg;
     *TOS_PTR() += arg_right;
 
-    vm_trace.pc += 3;
+    NEXT_HANDLER(code);
 }
 
 void op_sub_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() -= arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_div_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     /* Don't forget to handle the div by zero error */
-    if (arg_right == 0) {
+    if (arg_right != 0) {
+        *TOS_PTR() /= arg_right;
+    } else {
+        /* TODO: might want to abor there   */
         vm_trace.is_running = false;
         vm_trace.error = ERROR_DIVISION_BY_ZERO;
-        return;
     }
-    *TOS_PTR() /= arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_mul_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() *= arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_jump_handler(scode *code)
@@ -628,45 +617,41 @@ void op_jump_if_false_handler(scode *code)
 
 void op_equal_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() == arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_less_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() < arg_right;
-    vm_trace.pc++;
+
+    NEXT_HANDLER(code);
 }
 
 void op_less_or_equal_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() <= arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 void op_greater_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() > arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_greater_or_equal_handler(scode *code)
 {
-    (void) code;
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() >= arg_right;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_greater_or_equali_handler(scode *code)
@@ -674,79 +659,102 @@ void op_greater_or_equali_handler(scode *code)
     uint64_t arg_right = code->arg;
     *TOS_PTR() = PEEK() >= arg_right;
 
-    vm_trace.pc += 3;
+    NEXT_HANDLER(code);
 }
 
 void op_pop_res_handler(scode *code)
 {
-    (void) code;
-
     uint64_t res = POP();
     vm_trace.result = res;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_done_handler(scode *code)
 {
-    (void) code;
     vm_trace.is_running = false;
     vm_trace.error = SUCCESS;
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
 void op_print_handler(scode *code)
 {
-    (void) code;
-
     uint64_t arg = POP();
     printf("%" PRIu64 "\n", arg);
 
-    vm_trace.pc++;
+    NEXT_HANDLER(code);
 }
 
+typedef struct opinfo {
+    bool has_arg;
+    bool is_jump;
+    trace_op_handler *handler;
+} opinfo;
+
 opinfo opcode_to_opinfo[] = {
-    [OP_ABORT] = {false, op_abort_handler},
-    [OP_PUSHI] = {true, op_pushi_handler},
-    [OP_LOADI] = {true, op_loadi_handler},
-    [OP_LOADADDI] = {true, op_loadaddi_handler},
-    [OP_STOREI] = {true, op_storei_handler},
-    [OP_LOAD] = {false, op_load_handler},
-    [OP_STORE] = {false, op_store_handler},
-    [OP_DUP] = {false, op_dup_handler},
-    [OP_DISCARD] = {false, op_discard_handler},
-    [OP_ADD] = {false, op_add_handler},
-    [OP_ADDI] = {true, op_addi_handler},
-    [OP_SUB] = {false, op_sub_handler},
-    [OP_DIV] = {false, op_div_handler},
-    [OP_MUL] = {false, op_mul_handler},
-    [OP_JUMP] = {true, op_jump_handler},
-    [OP_JUMP_IF_TRUE] = {true, op_jump_if_true_handler},
-    [OP_JUMP_IF_FALSE] = {true, op_jump_if_false_handler},
-    [OP_EQUAL] = {false, op_equal_handler},
-    [OP_LESS] = {false, op_less_handler},
-    [OP_LESS_OR_EQUAL] = {false, op_less_or_equal_handler},
-    [OP_GREATER] = {false, op_greater_handler},
-    [OP_GREATER_OR_EQUAL] = {false, op_greater_or_equal_handler},
-    [OP_GREATER_OR_EQUALI] = {true, op_greater_or_equali_handler},
-    [OP_POP_RES] = {false, op_pop_res_handler},
-    [OP_DONE] = {false, op_done_handler},
-    [OP_PRINT] = {false, op_print_handler},
+    [OP_ABORT] = {false, false, op_abort_handler},
+    [OP_PUSHI] = {true, false, op_pushi_handler},
+    [OP_LOADI] = {true, false, op_loadi_handler},
+    [OP_LOADADDI] = {true, false, op_loadaddi_handler},
+    [OP_STOREI] = {true, false, op_storei_handler},
+    [OP_LOAD] = {false, false, op_load_handler},
+    [OP_STORE] = {false, false, op_store_handler},
+    [OP_DUP] = {false, false, op_dup_handler},
+    [OP_DISCARD] = {false, false, op_discard_handler},
+    [OP_ADD] = {false, false, op_add_handler},
+    [OP_ADDI] = {true, false, op_addi_handler},
+    [OP_SUB] = {false, false, op_sub_handler},
+    [OP_DIV] = {false, false, op_div_handler},
+    [OP_MUL] = {false, false, op_mul_handler},
+    [OP_JUMP] = {true, true, op_jump_handler},
+    [OP_JUMP_IF_TRUE] = {true, true, op_jump_if_true_handler},
+    [OP_JUMP_IF_FALSE] = {true, true, op_jump_if_false_handler},
+    [OP_EQUAL] = {false, false, op_equal_handler},
+    [OP_LESS] = {false, false, op_less_handler},
+    [OP_LESS_OR_EQUAL] = {false, false, op_less_or_equal_handler},
+    [OP_GREATER] = {false, false, op_greater_handler},
+    [OP_GREATER_OR_EQUAL] = {false, false, op_greater_or_equal_handler},
+    [OP_GREATER_OR_EQUALI] = {true, false, op_greater_or_equali_handler},
+    [OP_POP_RES] = {false, false, op_pop_res_handler},
+    [OP_DONE] = {false, false, op_done_handler},
+    [OP_PRINT] = {false, false, op_print_handler},
 };
 
-static void handler_trace_compile(scode *code)
+static void trace_tail_handler(scode *code)
 {
+    vm_trace.pc += code->arg;
+}
+
+static void trace_compile_handler(scode *trace_head)
+{
+    /* TODO: compile full length traces */
+    /* fprintf(stderr, "compile a trace\n"); */
+
     uint8_t *bytecode = vm_trace.bytecode;
     size_t pc = vm_trace.pc;
     uint8_t op = bytecode[pc];
+
     opinfo *info = &opcode_to_opinfo[op];
 
-    code->handler = info->handler;
-    if (info->has_arg)
-        code->arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
+    /* the single handler itself for now */
+    trace_head->handler = info->handler;
+    if (info->has_arg) {
+        uint64_t arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
+        trace_head->arg = arg;
+    }
 
-    code->handler(code);
+    /* jump handlers tweak pc on their own */
+    if (info->is_jump)
+        return;
+
+    /* the tail of the trace */
+    scode *tail = trace_head + 1;
+    tail->handler = trace_tail_handler;
+    tail->arg = info->has_arg ? 3 : 1;
+
+    /* now, run the chain */
+    trace_head->handler(trace_head);
 }
 
 static void vm_trace_reset(uint8_t *bytecode)
@@ -757,7 +765,7 @@ static void vm_trace_reset(uint8_t *bytecode)
         .is_running = true
     };
     for (size_t trace_i = 0; trace_i < MAX_TRACE_LEN; trace_i++ )
-        vm_trace.trace_cache[trace_i]->handler = handler_trace_compile;
+        vm_trace.trace_cache[trace_i]->handler = trace_compile_handler;
 }
 
 interpret_result vm_interpret_trace(uint8_t *bytecode)

@@ -15,7 +15,7 @@ pigletvm: pigletvm.c pigletvm-exec.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 pigletvm-test: pigletvm.c pigletvm-test.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) -g $(CFLAGS) $^ -o $@
 	./pigletvm-test
 
 clean:
