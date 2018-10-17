@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <setjmp.h>
 
 #include "pigletvm.h"
 
@@ -450,6 +451,7 @@ typedef scode trace[MAX_TRACE_LEN];
 static struct {
     uint8_t *bytecode;
     size_t pc;
+    jmp_buf buf;
     bool is_running;
     interpret_result error;
 
@@ -573,9 +575,9 @@ void op_div_handler(scode *code)
     if (arg_right != 0) {
         *TOS_PTR() /= arg_right;
     } else {
-        /* TODO: might want to abor there   */
         vm_trace.is_running = false;
         vm_trace.error = ERROR_DIVISION_BY_ZERO;
+        longjmp(vm_trace.buf, 1);
     }
 
     NEXT_HANDLER(code);
@@ -724,34 +726,54 @@ opinfo opcode_to_opinfo[] = {
 
 static void trace_tail_handler(scode *code)
 {
-    vm_trace.pc += code->arg;
+    vm_trace.pc = code->arg;
 }
 
 static void trace_compile_handler(scode *trace_head)
 {
-    /* TODO: compile full length traces */
-
+    fprintf(stderr, "compile\n");
     uint8_t *bytecode = vm_trace.bytecode;
     size_t pc = vm_trace.pc;
-    uint8_t op = bytecode[pc];
+    size_t trace_size = 0;
 
-    opinfo *info = &opcode_to_opinfo[op];
+    opinfo *info = &opcode_to_opinfo[bytecode[pc]];
+    scode *trace_tail = trace_head;
+    while (!info->is_final && !info->is_jump && trace_size < MAX_TRACE_LEN - 1) {
+        fprintf(stderr, "add instruction from pc=%zu op=%d\n", pc, bytecode[pc]);
 
-    /* the single handler itself for now */
-    trace_head->handler = info->handler;
-    if (info->has_arg) {
-        uint64_t arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
-        trace_head->arg = arg;
+        /* Set the handler and optionally skip argument bytes*/
+        trace_tail->handler = info->handler;
+
+        if (info->has_arg) {
+            uint64_t arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
+            fprintf(stderr, "with arg=%" PRIu64 "\n", arg);
+            trace_tail->arg = arg;
+            pc += 2;
+        }
+        pc++;
+
+        /* Get the next info and move the scode pointer */
+        info = &opcode_to_opinfo[bytecode[pc]];
+        trace_tail++;
+        trace_size++;
     }
 
-    /* jumps and finalizing instruction do not need to set a counter*/
-    if (info->is_jump || info->is_final)
-        return;
-
-    /* the tail of the trace */
-    scode *tail = trace_head + 1;
-    tail->handler = trace_tail_handler;
-    tail->arg = info->has_arg ? 3 : 1;
+    if (info->is_final) {
+        /* last intruction */
+        fprintf(stderr, "last\n");
+        trace_tail->handler = info->handler;
+    } else if (info->is_jump) {
+        /* jump handler */
+        fprintf(stderr, "jump\n");
+        trace_tail->handler = info->handler;
+        uint64_t target = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
+        trace_tail->arg = target;
+    } else {
+        /* the trace is too long, add a tail handler */
+        fprintf(stderr, "long trace\n");
+        trace_tail->handler = trace_tail_handler;
+        trace_tail->arg = pc;
+    }
 
     /* now, run the chain */
     trace_head->handler(trace_head);
@@ -772,9 +794,12 @@ interpret_result vm_interpret_trace(uint8_t *bytecode)
 {
     vm_trace_reset(bytecode);
 
-    while(vm_trace.is_running) {
-        scode *code = &vm_trace.trace_cache[vm_trace.pc][0];
-        code->handler(code);
+    fprintf(stderr, "\nnew run\n");
+    if (!setjmp(vm_trace.buf)) {
+        while(vm_trace.is_running) {
+            scode *code = &vm_trace.trace_cache[vm_trace.pc][0];
+            code->handler(code);
+        }
     }
 
     return vm_trace.error;
