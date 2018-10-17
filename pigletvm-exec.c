@@ -8,7 +8,6 @@
 
 #include "pigletvm.h"
 
-#define MAX_CODE_LEN 4096
 #define MAX_LINE_LEN 256
 
 #define TIMER_DEF(start_var,end_var) struct timeval (start_var); struct timeval (end_var)

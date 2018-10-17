@@ -1,5 +1,7 @@
 #include <inttypes.h>
 
+#define MAX_CODE_LEN 4096
+
 typedef enum interpret_result {
     SUCCESS,
     ERROR_DIVISION_BY_ZERO,
