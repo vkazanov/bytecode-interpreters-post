@@ -603,21 +603,27 @@ void op_mul_handler(scode *code)
 void op_jump_handler(scode *code)
 {
     uint16_t target = code->arg;
-    vm_trace.pc =  target;
+    vm_trace.pc = target;
 }
 
 void op_jump_if_true_handler(scode *code)
 {
     uint16_t target = code->arg;
-    if (POP())
+    if (POP()) {
         vm_trace.pc =  target;
+        return;
+    }
+    vm_trace.pc += 3;
 }
 
 void op_jump_if_false_handler(scode *code)
 {
     uint16_t target = code->arg;
-    if (!POP())
+    if (!POP()) {
         vm_trace.pc =  target;
+        return;
+    }
+    vm_trace.pc += 3;
 }
 
 void op_equal_handler(scode *code)
