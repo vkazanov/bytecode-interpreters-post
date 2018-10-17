@@ -28,6 +28,7 @@
 /*
  * switch or threaded vm
  * */
+
 static struct {
     uint8_t *ip;
 
@@ -424,6 +425,15 @@ uint64_t vm_get_result(void)
  * trace-based vm interpreter
  * */
 
+#define POP()                                   \
+    (*(--vm_trace.stack_top))
+#define PUSH(val)                               \
+    (*vm_trace.stack_top = (val), vm_trace.stack_top++)
+#define PEEK()                                  \
+    (*(vm_trace.stack_top - 1))
+#define TOS_PTR()                               \
+    (vm_trace.stack_top - 1)
+
 typedef struct scode scode;
 
 typedef void trace_op_handler(scode *code);
@@ -465,120 +475,216 @@ void op_abort_handler(scode *code)
     (void) code;
     vm_trace.is_running = false;
     vm_trace.error = ERROR_END_OF_STREAM;
+
+    vm_trace.pc++;
 }
 
 void op_pushi_handler(scode *code)
 {
-    /* TODO */
+    PUSH(code->arg);
+
+    vm_trace.pc += 3;
 }
 
 void op_loadi_handler(scode *code)
 {
-    /* TODO */
+    uint64_t addr = code->arg;
+    uint64_t val = vm_trace.memory[addr];
+    PUSH(val);
+
+    vm_trace.pc += 3;
 }
 
 void op_loadaddi_handler(scode *code)
 {
-    /* TODO */
+    uint64_t addr = code->arg;
+    uint64_t val = vm_trace.memory[addr];
+    *TOS_PTR() += val;
+
+    vm_trace.pc += 3;
 }
 
 void op_storei_handler(scode *code)
 {
-    /* TODO */
+    uint16_t addr = code->arg;
+    uint64_t val = POP();
+    vm_trace.memory[addr] = val;
+
+    vm_trace.pc += 3;
 }
 
 void op_load_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint16_t addr = POP();
+    uint64_t val = vm_trace.memory[addr];
+    PUSH(val);
+
+    vm_trace.pc++;
+
 }
 
 void op_store_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t val = POP();
+    uint16_t addr = POP();
+    vm_trace.memory[addr] = val;
+
+    vm_trace.pc++;
 }
 
 void op_dup_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    PUSH(PEEK());
+
+    vm_trace.pc++;
 }
 
 void op_discard_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    (void) POP();
+
+    vm_trace.pc++;
 }
 
 void op_add_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() += arg_right;
+
+    vm_trace.pc++;
 }
 
 void op_addi_handler(scode *code)
 {
-    /* TODO */
+    uint16_t arg_right = code->arg;
+    *TOS_PTR() += arg_right;
+
+    vm_trace.pc += 3;
 }
 
 void op_sub_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() -= arg_right;
+
+    vm_trace.pc++;
 }
 
 void op_div_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    /* Don't forget to handle the div by zero error */
+    if (arg_right == 0) {
+        vm_trace.is_running = false;
+        vm_trace.error = ERROR_DIVISION_BY_ZERO;
+        return;
+    }
+    *TOS_PTR() /= arg_right;
+
+    vm_trace.pc++;
 }
 
 void op_mul_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() *= arg_right;
+
+    vm_trace.pc++;
 }
 
 void op_jump_handler(scode *code)
 {
-    /* TODO */
+    uint16_t target = code->arg;
+    vm_trace.pc =  target;
+
+    vm_trace.pc += 3;
 }
 
 void op_jump_if_true_handler(scode *code)
 {
-    /* TODO */
+    uint16_t target = code->arg;
+    if (POP())
+        vm_trace.pc =  target;
+
+    vm_trace.pc += 3;
 }
 
 void op_jump_if_false_handler(scode *code)
 {
-    /* TODO */
+    uint16_t target = code->arg;
+    if (!POP())
+        vm_trace.pc =  target;
+
+    vm_trace.pc += 3;
 }
 
 void op_equal_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() = PEEK() == arg_right;
+
+    vm_trace.pc++;
 }
 
 void op_less_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() = PEEK() < arg_right;
+    vm_trace.pc++;
 }
 
 void op_less_or_equal_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() = PEEK() <= arg_right;
+
+    vm_trace.pc++;
 }
 void op_greater_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() = PEEK() > arg_right;
+
+    vm_trace.pc++;
 }
 
 void op_greater_or_equal_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+    uint64_t arg_right = POP();
+    *TOS_PTR() = PEEK() >= arg_right;
+
+    vm_trace.pc++;
 }
 
 void op_greater_or_equali_handler(scode *code)
 {
-    /* TODO */
+    uint64_t arg_right = code->arg;
+    *TOS_PTR() = PEEK() >= arg_right;
+
+    vm_trace.pc += 3;
 }
 
-void op_pop_handler(scode *code)
+void op_pop_res_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+
+    uint64_t res = POP();
+    vm_trace.result = res;
+
+    vm_trace.pc++;
 }
 
 void op_done_handler(scode *code)
@@ -586,11 +692,18 @@ void op_done_handler(scode *code)
     (void) code;
     vm_trace.is_running = false;
     vm_trace.error = SUCCESS;
+
+    vm_trace.pc++;
 }
 
 void op_print_handler(scode *code)
 {
-    /* TODO */
+    (void) code;
+
+    uint64_t arg = POP();
+    printf("%" PRIu64 "\n", arg);
+
+    vm_trace.pc++;
 }
 
 opinfo opcode_to_opinfo[] = {
@@ -617,14 +730,23 @@ opinfo opcode_to_opinfo[] = {
     [OP_GREATER] = {false, op_greater_handler},
     [OP_GREATER_OR_EQUAL] = {false, op_greater_or_equal_handler},
     [OP_GREATER_OR_EQUALI] = {true, op_greater_or_equali_handler},
-    [OP_POP_RES] = {false, op_pop_handler},
+    [OP_POP_RES] = {false, op_pop_res_handler},
     [OP_DONE] = {false, op_done_handler},
     [OP_PRINT] = {false, op_print_handler},
 };
 
 static void handler_trace_compile(scode *code)
 {
-    /* TODO: replace itself with a handler and run the handler */
+    uint8_t *bytecode = vm_trace.bytecode;
+    size_t pc = vm_trace.pc;
+    uint8_t op = bytecode[pc];
+    opinfo *info = &opcode_to_opinfo[op];
+
+    code->handler = info->handler;
+    if (info->has_arg)
+        code->arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
+
+    code->handler(code);
 }
 
 static void vm_trace_reset(uint8_t *bytecode)
@@ -636,4 +758,16 @@ static void vm_trace_reset(uint8_t *bytecode)
     };
     for (size_t trace_i = 0; trace_i < MAX_TRACE_LEN; trace_i++ )
         vm_trace.trace_cache[trace_i]->handler = handler_trace_compile;
+}
+
+interpret_result vm_trace_interpret(uint8_t *bytecode)
+{
+    vm_trace_reset(bytecode);
+
+    while(vm_trace.is_running) {
+        scode *code = &vm_trace.trace_cache[vm_trace.pc][0];
+        code->handler(code);
+    }
+
+    return vm_trace.error;
 }
