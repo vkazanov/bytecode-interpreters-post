@@ -593,28 +593,26 @@ void op_mul_handler(scode *code)
 
 void op_jump_handler(scode *code)
 {
-    uint16_t target = code->arg;
+    uint64_t target = code->arg;
     vm_trace.pc = target;
 }
 
 void op_jump_if_true_handler(scode *code)
 {
-    uint16_t target = code->arg;
     if (POP()) {
-        vm_trace.pc =  target;
+        uint64_t target = code->arg;
+        vm_trace.pc = target;
         return;
     }
-    vm_trace.pc += 3;
 }
 
 void op_jump_if_false_handler(scode *code)
 {
-    uint16_t target = code->arg;
     if (!POP()) {
+        uint64_t target = code->arg;
         vm_trace.pc =  target;
         return;
     }
-    vm_trace.pc += 3;
 }
 
 void op_equal_handler(scode *code)
@@ -729,24 +727,27 @@ static void trace_tail_handler(scode *code)
     vm_trace.pc = code->arg;
 }
 
+static void trace_prejump_handler(scode *code)
+{
+    vm_trace.pc = code->arg;
+
+    NEXT_HANDLER(code);
+}
+
 static void trace_compile_handler(scode *trace_head)
 {
-    fprintf(stderr, "compile\n");
     uint8_t *bytecode = vm_trace.bytecode;
     size_t pc = vm_trace.pc;
     size_t trace_size = 0;
 
     opinfo *info = &opcode_to_opinfo[bytecode[pc]];
     scode *trace_tail = trace_head;
-    while (!info->is_final && !info->is_jump && trace_size < MAX_TRACE_LEN - 1) {
-        fprintf(stderr, "add instruction from pc=%zu op=%d\n", pc, bytecode[pc]);
-
+    while (!info->is_final && !info->is_jump && trace_size < MAX_TRACE_LEN - 2) {
         /* Set the handler and optionally skip argument bytes*/
         trace_tail->handler = info->handler;
 
         if (info->has_arg) {
             uint64_t arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
-            fprintf(stderr, "with arg=%" PRIu64 "\n", arg);
             trace_tail->arg = arg;
             pc += 2;
         }
@@ -760,17 +761,20 @@ static void trace_compile_handler(scode *trace_head)
 
     if (info->is_final) {
         /* last intruction */
-        fprintf(stderr, "last\n");
         trace_tail->handler = info->handler;
     } else if (info->is_jump) {
         /* jump handler */
-        fprintf(stderr, "jump\n");
+
+        /* add a tail to skip the jump instruction - if the branch is not taken */
+        trace_tail->handler = trace_prejump_handler;
+        trace_tail->arg = pc + 3;
+
+        /* now, the jump handler itself */
+        trace_tail++;
         trace_tail->handler = info->handler;
-        uint64_t target = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
-        trace_tail->arg = target;
+        trace_tail->arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
     } else {
         /* the trace is too long, add a tail handler */
-        fprintf(stderr, "long trace\n");
         trace_tail->handler = trace_tail_handler;
         trace_tail->arg = pc;
     }
@@ -794,7 +798,6 @@ interpret_result vm_interpret_trace(uint8_t *bytecode)
 {
     vm_trace_reset(bytecode);
 
-    fprintf(stderr, "\nnew run\n");
     if (!setjmp(vm_trace.buf)) {
         while(vm_trace.is_running) {
             scode *code = &vm_trace.trace_cache[vm_trace.pc][0];
