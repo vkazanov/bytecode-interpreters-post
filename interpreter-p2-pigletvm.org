@@ -38,7 +38,7 @@
 
   sieve.pvm
 
-* TODO простые оптимизации
+* DONE простые оптимизации
 
   - [X] замерить скорость без оптимизаций
 
@@ -80,12 +80,21 @@
 
     x100 - 0.45s
 
+
+* DONE шитый код
+
   - [X] token threaded code
 
     0.95 -> 0.8
 
     -O3: 0.5s
 
-* TODO шитый код
 * TODO кэш трасс
-* TODO регистровая машина?
+
+  - [X] non-jumping trace
+
+  non-optimized: 1.2s
+
+  -O3: 0.36s
+
+  - [ ] jumping trace
