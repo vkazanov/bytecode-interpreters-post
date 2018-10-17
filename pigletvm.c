@@ -469,10 +469,10 @@ static struct {
 
 void op_abort_handler(scode *code)
 {
+    (void) code;
+
     vm_trace.is_running = false;
     vm_trace.error = ERROR_END_OF_STREAM;
-
-    NEXT_HANDLER(code);
 }
 
 void op_pushi_handler(scode *code)
@@ -672,10 +672,10 @@ void op_pop_res_handler(scode *code)
 
 void op_done_handler(scode *code)
 {
+    (void) code;
+
     vm_trace.is_running = false;
     vm_trace.error = SUCCESS;
-
-    NEXT_HANDLER(code);
 }
 
 void op_print_handler(scode *code)
@@ -689,36 +689,37 @@ void op_print_handler(scode *code)
 typedef struct opinfo {
     bool has_arg;
     bool is_jump;
+    bool is_final;
     trace_op_handler *handler;
 } opinfo;
 
 opinfo opcode_to_opinfo[] = {
-    [OP_ABORT] = {false, false, op_abort_handler},
-    [OP_PUSHI] = {true, false, op_pushi_handler},
-    [OP_LOADI] = {true, false, op_loadi_handler},
-    [OP_LOADADDI] = {true, false, op_loadaddi_handler},
-    [OP_STOREI] = {true, false, op_storei_handler},
-    [OP_LOAD] = {false, false, op_load_handler},
-    [OP_STORE] = {false, false, op_store_handler},
-    [OP_DUP] = {false, false, op_dup_handler},
-    [OP_DISCARD] = {false, false, op_discard_handler},
-    [OP_ADD] = {false, false, op_add_handler},
-    [OP_ADDI] = {true, false, op_addi_handler},
-    [OP_SUB] = {false, false, op_sub_handler},
-    [OP_DIV] = {false, false, op_div_handler},
-    [OP_MUL] = {false, false, op_mul_handler},
-    [OP_JUMP] = {true, true, op_jump_handler},
-    [OP_JUMP_IF_TRUE] = {true, true, op_jump_if_true_handler},
-    [OP_JUMP_IF_FALSE] = {true, true, op_jump_if_false_handler},
-    [OP_EQUAL] = {false, false, op_equal_handler},
-    [OP_LESS] = {false, false, op_less_handler},
-    [OP_LESS_OR_EQUAL] = {false, false, op_less_or_equal_handler},
-    [OP_GREATER] = {false, false, op_greater_handler},
-    [OP_GREATER_OR_EQUAL] = {false, false, op_greater_or_equal_handler},
-    [OP_GREATER_OR_EQUALI] = {true, false, op_greater_or_equali_handler},
-    [OP_POP_RES] = {false, false, op_pop_res_handler},
-    [OP_DONE] = {false, false, op_done_handler},
-    [OP_PRINT] = {false, false, op_print_handler},
+    [OP_ABORT] = {false, false, true, op_abort_handler},
+    [OP_PUSHI] = {true, false, false, op_pushi_handler},
+    [OP_LOADI] = {true, false, false, op_loadi_handler},
+    [OP_LOADADDI] = {true, false, false, op_loadaddi_handler},
+    [OP_STOREI] = {true, false, false, op_storei_handler},
+    [OP_LOAD] = {false, false, false, op_load_handler},
+    [OP_STORE] = {false, false, false, op_store_handler},
+    [OP_DUP] = {false, false, false, op_dup_handler},
+    [OP_DISCARD] = {false, false, false, op_discard_handler},
+    [OP_ADD] = {false, false, false, op_add_handler},
+    [OP_ADDI] = {true, false, false, op_addi_handler},
+    [OP_SUB] = {false, false, false, op_sub_handler},
+    [OP_DIV] = {false, false, false, op_div_handler},
+    [OP_MUL] = {false, false, false, op_mul_handler},
+    [OP_JUMP] = {true, true, false, op_jump_handler},
+    [OP_JUMP_IF_TRUE] = {true, true, false, op_jump_if_true_handler},
+    [OP_JUMP_IF_FALSE] = {true, true, false, op_jump_if_false_handler},
+    [OP_EQUAL] = {false, false, false, op_equal_handler},
+    [OP_LESS] = {false, false, false, op_less_handler},
+    [OP_LESS_OR_EQUAL] = {false, false, false, op_less_or_equal_handler},
+    [OP_GREATER] = {false, false, false, op_greater_handler},
+    [OP_GREATER_OR_EQUAL] = {false, false, false, op_greater_or_equal_handler},
+    [OP_GREATER_OR_EQUALI] = {true, false, false, op_greater_or_equali_handler},
+    [OP_POP_RES] = {false, false, false, op_pop_res_handler},
+    [OP_DONE] = {false, false, true, op_done_handler},
+    [OP_PRINT] = {false, false, false, op_print_handler},
 };
 
 static void trace_tail_handler(scode *code)
@@ -743,8 +744,8 @@ static void trace_compile_handler(scode *trace_head)
         trace_head->arg = arg;
     }
 
-    /* jump handlers tweak pc on their own */
-    if (info->is_jump)
+    /* jumps and finalizing instruction do not need to set a counter*/
+    if (info->is_jump || info->is_final)
         return;
 
     /* the tail of the trace */
