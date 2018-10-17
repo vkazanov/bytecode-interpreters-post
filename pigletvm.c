@@ -729,7 +729,6 @@ static void trace_tail_handler(scode *code)
 static void trace_compile_handler(scode *trace_head)
 {
     /* TODO: compile full length traces */
-    /* fprintf(stderr, "compile a trace\n"); */
 
     uint8_t *bytecode = vm_trace.bytecode;
     size_t pc = vm_trace.pc;
@@ -764,8 +763,8 @@ static void vm_trace_reset(uint8_t *bytecode)
         .bytecode = bytecode,
         .is_running = true
     };
-    for (size_t trace_i = 0; trace_i < MAX_TRACE_LEN; trace_i++ )
-        vm_trace.trace_cache[trace_i]->handler = trace_compile_handler;
+    for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
+        vm_trace.trace_cache[trace_i][0].handler = trace_compile_handler;
 }
 
 interpret_result vm_interpret_trace(uint8_t *bytecode)
