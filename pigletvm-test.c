@@ -15,9 +15,12 @@ int main(int argc, char *argv[])
     {
         /* Push and pop the result */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(5u), OP_POP_RES, OP_DONE };
-        interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
 
+        interpret_result result = vm_interpret(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 5);
+
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 5);
     }
@@ -33,8 +36,10 @@ int main(int argc, char *argv[])
             OP_DONE
         };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 10);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 10);
     }
@@ -49,8 +54,10 @@ int main(int argc, char *argv[])
             OP_DONE
         };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 111);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 111);
     }
@@ -67,8 +74,10 @@ int main(int argc, char *argv[])
             OP_DONE
         };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 112);
 
+        vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 112);
     }
@@ -83,8 +92,10 @@ int main(int argc, char *argv[])
             OP_DONE
         };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 5);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 5);
     }
@@ -93,8 +104,10 @@ int main(int argc, char *argv[])
         /* Addition */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(5), OP_ADD, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 15);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 15);
     }
@@ -103,8 +116,10 @@ int main(int argc, char *argv[])
         /* Subtraction */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(6), OP_SUB, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 4);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 4);
     }
@@ -113,8 +128,10 @@ int main(int argc, char *argv[])
         /* Division */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(5), OP_DIV, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 2);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 2);
     }
@@ -123,8 +140,8 @@ int main(int argc, char *argv[])
         /* Division with error */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(0), OP_DIV, OP_POP_RES, OP_DONE };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
-
+        assert(result == ERROR_DIVISION_BY_ZERO);
+        result = vm_interpret_threaded(code);
         assert(result == ERROR_DIVISION_BY_ZERO);
     }
 
@@ -134,8 +151,10 @@ int main(int argc, char *argv[])
             OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(2), OP_MUL, OP_POP_RES, OP_DONE
         };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 20);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 20);
     }
@@ -152,8 +171,10 @@ int main(int argc, char *argv[])
             OP_DONE
         };
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 28);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 28);
     }
@@ -176,8 +197,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 4);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 4);
     }
@@ -198,8 +221,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 13);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 13);
     }
@@ -220,8 +245,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 2);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 2);
     }
@@ -242,8 +269,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 13);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 13);
     }
@@ -264,8 +293,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 2);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 2);
     }
@@ -281,8 +312,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 1);
     }
@@ -298,8 +331,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 0);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 0);
     }
@@ -315,8 +350,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 1);
     }
@@ -332,8 +369,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 1);
     }
@@ -349,8 +388,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 1);
     }
@@ -366,8 +407,10 @@ int main(int argc, char *argv[])
         };
 
         interpret_result result = vm_interpret(code);
-        printf("vm state: %" PRIu64 "\n", vm_get_result());
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 1);
 
+        result = vm_interpret_threaded(code);
         assert(result == SUCCESS);
         assert(vm_get_result() == 1);
     }

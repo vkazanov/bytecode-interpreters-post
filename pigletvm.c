@@ -37,19 +37,18 @@ static struct {
     uint64_t result;
 } vm;
 
-static void vm_reset(void)
+static void vm_reset(uint8_t *bytecode)
 {
-    puts("Reset vm state");
-    vm = (typeof(vm)) { NULL };
-    vm.stack_top = vm.stack;
+    vm = (typeof(vm)) {
+        .stack_top = vm.stack,
+        .ip = bytecode
+    };
 }
 
 interpret_result vm_interpret(uint8_t *bytecode)
 {
-    vm_reset();
+    vm_reset(bytecode);
 
-    puts("Start interpreting");
-    vm.ip = bytecode;
     for (;;) {
         uint8_t instruction = NEXT_OP();
         switch (instruction) {
@@ -214,8 +213,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
 
 interpret_result vm_interpret_threaded(uint8_t *bytecode)
 {
-    vm_reset();
-    vm.ip = bytecode;
+    vm_reset(bytecode);
 
     const void *labels[] = {
         [OP_PUSHI] = &&op_pushi,
