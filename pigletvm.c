@@ -823,3 +823,8 @@ uint64_t vm_trace_get_result(void)
 {
     return vm_trace.result;
 }
+
+/* Local Variables: */
+/* rmsbolt-command: "gcc -O3" */
+/* rmsbolt-asm-format: "intel" */
+/* End: */
