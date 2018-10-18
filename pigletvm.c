@@ -471,7 +471,7 @@ static struct {
 
 } vm_trace;
 
-void op_abort_handler(scode *code)
+static void op_abort_handler(scode *code)
 {
     (void) code;
 
@@ -479,14 +479,14 @@ void op_abort_handler(scode *code)
     vm_trace.error = ERROR_END_OF_STREAM;
 }
 
-void op_pushi_handler(scode *code)
+static void op_pushi_handler(scode *code)
 {
     PUSH(code->arg);
 
     NEXT_HANDLER(code);
 }
 
-void op_loadi_handler(scode *code)
+static void op_loadi_handler(scode *code)
 {
     uint64_t addr = code->arg;
     uint64_t val = vm_trace.memory[addr];
@@ -495,7 +495,7 @@ void op_loadi_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_loadaddi_handler(scode *code)
+static void op_loadaddi_handler(scode *code)
 {
     uint64_t addr = code->arg;
     uint64_t val = vm_trace.memory[addr];
@@ -504,7 +504,7 @@ void op_loadaddi_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_storei_handler(scode *code)
+static void op_storei_handler(scode *code)
 {
     uint16_t addr = code->arg;
     uint64_t val = POP();
@@ -513,7 +513,7 @@ void op_storei_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_load_handler(scode *code)
+static void op_load_handler(scode *code)
 {
     uint16_t addr = POP();
     uint64_t val = vm_trace.memory[addr];
@@ -523,7 +523,7 @@ void op_load_handler(scode *code)
 
 }
 
-void op_store_handler(scode *code)
+static void op_store_handler(scode *code)
 {
     uint64_t val = POP();
     uint16_t addr = POP();
@@ -532,21 +532,21 @@ void op_store_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_dup_handler(scode *code)
+static void op_dup_handler(scode *code)
 {
     PUSH(PEEK());
 
     NEXT_HANDLER(code);
 }
 
-void op_discard_handler(scode *code)
+static void op_discard_handler(scode *code)
 {
     (void) POP();
 
     NEXT_HANDLER(code);
 }
 
-void op_add_handler(scode *code)
+static void op_add_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() += arg_right;
@@ -554,7 +554,7 @@ void op_add_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_addi_handler(scode *code)
+static void op_addi_handler(scode *code)
 {
     uint16_t arg_right = code->arg;
     *TOS_PTR() += arg_right;
@@ -562,7 +562,7 @@ void op_addi_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_sub_handler(scode *code)
+static void op_sub_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() -= arg_right;
@@ -570,7 +570,7 @@ void op_sub_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_div_handler(scode *code)
+static void op_div_handler(scode *code)
 {
     uint64_t arg_right = POP();
     /* Don't forget to handle the div by zero error */
@@ -585,7 +585,7 @@ void op_div_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_mul_handler(scode *code)
+static void op_mul_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() *= arg_right;
@@ -593,13 +593,13 @@ void op_mul_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_jump_handler(scode *code)
+static void op_jump_handler(scode *code)
 {
     uint64_t target = code->arg;
     vm_trace.pc = target;
 }
 
-void op_jump_if_true_handler(scode *code)
+static void op_jump_if_true_handler(scode *code)
 {
     if (POP()) {
         uint64_t target = code->arg;
@@ -608,7 +608,7 @@ void op_jump_if_true_handler(scode *code)
     }
 }
 
-void op_jump_if_false_handler(scode *code)
+static void op_jump_if_false_handler(scode *code)
 {
     if (!POP()) {
         uint64_t target = code->arg;
@@ -617,7 +617,7 @@ void op_jump_if_false_handler(scode *code)
     }
 }
 
-void op_equal_handler(scode *code)
+static void op_equal_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() == arg_right;
@@ -625,7 +625,7 @@ void op_equal_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_less_handler(scode *code)
+static void op_less_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() < arg_right;
@@ -633,14 +633,14 @@ void op_less_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_less_or_equal_handler(scode *code)
+static void op_less_or_equal_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() <= arg_right;
 
     NEXT_HANDLER(code);
 }
-void op_greater_handler(scode *code)
+static void op_greater_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() > arg_right;
@@ -648,7 +648,7 @@ void op_greater_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_greater_or_equal_handler(scode *code)
+static void op_greater_or_equal_handler(scode *code)
 {
     uint64_t arg_right = POP();
     *TOS_PTR() = PEEK() >= arg_right;
@@ -656,7 +656,7 @@ void op_greater_or_equal_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_greater_or_equali_handler(scode *code)
+static void op_greater_or_equali_handler(scode *code)
 {
     uint64_t arg_right = code->arg;
     *TOS_PTR() = PEEK() >= arg_right;
@@ -664,7 +664,7 @@ void op_greater_or_equali_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_pop_res_handler(scode *code)
+static void op_pop_res_handler(scode *code)
 {
     uint64_t res = POP();
     vm_trace.result = res;
@@ -672,7 +672,7 @@ void op_pop_res_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-void op_done_handler(scode *code)
+static void op_done_handler(scode *code)
 {
     (void) code;
 
@@ -680,7 +680,7 @@ void op_done_handler(scode *code)
     vm_trace.error = SUCCESS;
 }
 
-void op_print_handler(scode *code)
+static void op_print_handler(scode *code)
 {
     uint64_t arg = POP();
     printf("%" PRIu64 "\n", arg);
@@ -747,8 +747,8 @@ static void trace_compile_handler(scode *trace_head)
     scode *trace_tail = trace_head;
     while (!info->is_final && !info->is_branch && trace_size < MAX_TRACE_LEN - 2) {
         if (info->is_abs_jump) {
-            /* Absolute jumps need special care: we just jump in compile-time to the argument pc and
-             * continue parsing */
+            /* Absolute jumps need special care: we just jump continue parsing starting with the
+             * target pc of the instruction*/
             uint64_t target = ARG_AT_PC(bytecode, pc);
             pc = target;
         } else {
@@ -771,7 +771,7 @@ static void trace_compile_handler(scode *trace_head)
     }
 
     if (info->is_final) {
-        /* last intruction */
+        /* last instruction */
         trace_tail->handler = info->handler;
     } else if (info->is_branch) {
         /* jump handler */
