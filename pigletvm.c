@@ -688,7 +688,7 @@ void op_print_handler(scode *code)
 
 typedef struct opinfo {
     bool has_arg;
-    bool is_jump;
+    bool is_branch;
     bool is_final;
     trace_op_handler *handler;
 } opinfo;
@@ -742,7 +742,7 @@ static void trace_compile_handler(scode *trace_head)
 
     opinfo *info = &opcode_to_opinfo[bytecode[pc]];
     scode *trace_tail = trace_head;
-    while (!info->is_final && !info->is_jump && trace_size < MAX_TRACE_LEN - 2) {
+    while (!info->is_final && !info->is_branch && trace_size < MAX_TRACE_LEN - 2) {
         /* Set the handler and optionally skip argument bytes*/
         trace_tail->handler = info->handler;
 
@@ -758,11 +758,12 @@ static void trace_compile_handler(scode *trace_head)
         trace_tail++;
         trace_size++;
     }
+    fprintf(stderr, "trail size: %zu\n", trace_size);
 
     if (info->is_final) {
         /* last intruction */
         trace_tail->handler = info->handler;
-    } else if (info->is_jump) {
+    } else if (info->is_branch) {
         /* jump handler */
 
         /* add a tail to skip the jump instruction - if the branch is not taken */

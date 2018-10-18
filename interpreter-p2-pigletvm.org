@@ -98,3 +98,7 @@
   -O3: 0.36s
 
   - [ ] jumping trace
+
+  check trace avg size before/after
+
+  measure speed difference
