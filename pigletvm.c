@@ -436,6 +436,8 @@ uint64_t vm_get_result(void)
     (vm_trace.stack_top - 1)
 #define NEXT_HANDLER(code)                      \
     (((code)++), (code)->handler((code)))
+#define ARG_AT_PC(bytecode, pc)                                         \
+    (((uint64_t)(bytecode)[(pc) + 1] << 8) + (bytecode)[(pc) + 2])
 
 typedef struct scode scode;
 
@@ -719,7 +721,7 @@ opinfo opcode_to_opinfo[] = {
     [OP_GREATER_OR_EQUAL] = {false, false, false, false, op_greater_or_equal_handler},
     [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_handler},
     [OP_POP_RES] = {false, false, false, false, op_pop_res_handler},
-    [OP_DONE] = {false, false, true, false, op_done_handler},
+    [OP_DONE] = {false, false, false, true, op_done_handler},
     [OP_PRINT] = {false, false, false, false, op_print_handler},
 };
 
@@ -744,21 +746,30 @@ static void trace_compile_handler(scode *trace_head)
     opinfo *info = &opcode_to_opinfo[bytecode[pc]];
     scode *trace_tail = trace_head;
     while (!info->is_final && !info->is_branch && trace_size < MAX_TRACE_LEN - 2) {
-        /* Set the handler and optionally skip argument bytes*/
-        trace_tail->handler = info->handler;
+        if (info->is_abs_jump) {
+            /* Absolute jumps need special care: we just jump in compile-time to the argument pc and
+             * continue parsing */
+            uint64_t target = ARG_AT_PC(bytecode, pc);
+            pc = target;
+        } else {
+            /* For usual handlers we just set the handler and optionally skip argument bytes*/
+            trace_tail->handler = info->handler;
 
-        if (info->has_arg) {
-            uint64_t arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
-            trace_tail->arg = arg;
-            pc += 2;
+            if (info->has_arg) {
+                uint64_t arg = ARG_AT_PC(bytecode, pc);
+                trace_tail->arg = arg;
+                pc += 2;
+            }
+            pc++;
+
+            trace_size++;
+            trace_tail++;
         }
-        pc++;
 
         /* Get the next info and move the scode pointer */
         info = &opcode_to_opinfo[bytecode[pc]];
-        trace_tail++;
-        trace_size++;
     }
+
     fprintf(stderr, "trail size: %zu\n", trace_size);
 
     if (info->is_final) {
@@ -774,7 +785,7 @@ static void trace_compile_handler(scode *trace_head)
         /* now, the jump handler itself */
         trace_tail++;
         trace_tail->handler = info->handler;
-        trace_tail->arg = ((uint64_t)bytecode[pc + 1] << 8) + bytecode[pc + 2];
+        trace_tail->arg = ARG_AT_PC(bytecode, pc);
     } else {
         /* the trace is too long, add a tail handler */
         trace_tail->handler = trace_tail_handler;
