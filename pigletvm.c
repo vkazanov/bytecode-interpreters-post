@@ -711,7 +711,7 @@ opinfo opcode_to_opinfo[] = {
     [OP_SUB] = {false, false, false, false, op_sub_handler},
     [OP_DIV] = {false, false, false, false, op_div_handler},
     [OP_MUL] = {false, false, false, false, op_mul_handler},
-    [OP_JUMP] = {true, true, false, false, op_jump_handler},
+    [OP_JUMP] = {true, false, true, false, op_jump_handler},
     [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_handler},
     [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_handler},
     [OP_EQUAL] = {false, false, false, false, op_equal_handler},
@@ -769,8 +769,6 @@ static void trace_compile_handler(scode *trace_head)
         /* Get the next info and move the scode pointer */
         info = &opcode_to_opinfo[bytecode[pc]];
     }
-
-    fprintf(stderr, "trail size: %zu\n", trace_size);
 
     if (info->is_final) {
         /* last intruction */

@@ -89,18 +89,20 @@
 
     -O3: 0.5s
 
-* TODO кэш трасс
+* DONE кэш трасс
 
   - [X] non-jumping trace
 
   non-optimized: 1.2s
 
-  -O3: 0.36s
+  -O3: 0.38s
 
   avg trace size: 4.42 (+1,2)
 
-  - [ ] jumping trace
+  - [X] jumping trace
 
-  check trace avg size before/after
+  avg trace size: 5.1
 
-  measure speed difference
+  non-optimized:
+
+  -O3: 0.36
