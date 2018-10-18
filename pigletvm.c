@@ -689,37 +689,38 @@ void op_print_handler(scode *code)
 typedef struct opinfo {
     bool has_arg;
     bool is_branch;
+    bool is_abs_jump;
     bool is_final;
     trace_op_handler *handler;
 } opinfo;
 
 opinfo opcode_to_opinfo[] = {
-    [OP_ABORT] = {false, false, true, op_abort_handler},
-    [OP_PUSHI] = {true, false, false, op_pushi_handler},
-    [OP_LOADI] = {true, false, false, op_loadi_handler},
-    [OP_LOADADDI] = {true, false, false, op_loadaddi_handler},
-    [OP_STOREI] = {true, false, false, op_storei_handler},
-    [OP_LOAD] = {false, false, false, op_load_handler},
-    [OP_STORE] = {false, false, false, op_store_handler},
-    [OP_DUP] = {false, false, false, op_dup_handler},
-    [OP_DISCARD] = {false, false, false, op_discard_handler},
-    [OP_ADD] = {false, false, false, op_add_handler},
-    [OP_ADDI] = {true, false, false, op_addi_handler},
-    [OP_SUB] = {false, false, false, op_sub_handler},
-    [OP_DIV] = {false, false, false, op_div_handler},
-    [OP_MUL] = {false, false, false, op_mul_handler},
-    [OP_JUMP] = {true, true, false, op_jump_handler},
-    [OP_JUMP_IF_TRUE] = {true, true, false, op_jump_if_true_handler},
-    [OP_JUMP_IF_FALSE] = {true, true, false, op_jump_if_false_handler},
-    [OP_EQUAL] = {false, false, false, op_equal_handler},
-    [OP_LESS] = {false, false, false, op_less_handler},
-    [OP_LESS_OR_EQUAL] = {false, false, false, op_less_or_equal_handler},
-    [OP_GREATER] = {false, false, false, op_greater_handler},
-    [OP_GREATER_OR_EQUAL] = {false, false, false, op_greater_or_equal_handler},
-    [OP_GREATER_OR_EQUALI] = {true, false, false, op_greater_or_equali_handler},
-    [OP_POP_RES] = {false, false, false, op_pop_res_handler},
-    [OP_DONE] = {false, false, true, op_done_handler},
-    [OP_PRINT] = {false, false, false, op_print_handler},
+    [OP_ABORT] = {false, false, false, true, op_abort_handler},
+    [OP_PUSHI] = {true, false, false, false, op_pushi_handler},
+    [OP_LOADI] = {true, false, false, false, op_loadi_handler},
+    [OP_LOADADDI] = {true, false, false, false, op_loadaddi_handler},
+    [OP_STOREI] = {true, false, false, false, op_storei_handler},
+    [OP_LOAD] = {false, false, false, false, op_load_handler},
+    [OP_STORE] = {false, false, false, false, op_store_handler},
+    [OP_DUP] = {false, false, false, false, op_dup_handler},
+    [OP_DISCARD] = {false, false, false, false, op_discard_handler},
+    [OP_ADD] = {false, false, false, false, op_add_handler},
+    [OP_ADDI] = {true, false, false, false, op_addi_handler},
+    [OP_SUB] = {false, false, false, false, op_sub_handler},
+    [OP_DIV] = {false, false, false, false, op_div_handler},
+    [OP_MUL] = {false, false, false, false, op_mul_handler},
+    [OP_JUMP] = {true, true, false, false, op_jump_handler},
+    [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_handler},
+    [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_handler},
+    [OP_EQUAL] = {false, false, false, false, op_equal_handler},
+    [OP_LESS] = {false, false, false, false, op_less_handler},
+    [OP_LESS_OR_EQUAL] = {false, false, false, false, op_less_or_equal_handler},
+    [OP_GREATER] = {false, false, false, false, op_greater_handler},
+    [OP_GREATER_OR_EQUAL] = {false, false, false, false, op_greater_or_equal_handler},
+    [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_handler},
+    [OP_POP_RES] = {false, false, false, false, op_pop_res_handler},
+    [OP_DONE] = {false, false, true, false, op_done_handler},
+    [OP_PRINT] = {false, false, false, false, op_print_handler},
 };
 
 static void trace_tail_handler(scode *code)

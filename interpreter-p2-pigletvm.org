@@ -97,6 +97,8 @@
 
   -O3: 0.36s
 
+  avg trace size: 4.42 (+1,2)
+
   - [ ] jumping trace
 
   check trace avg size before/after
