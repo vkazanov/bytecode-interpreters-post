@@ -696,7 +696,7 @@ typedef struct opinfo {
     trace_op_handler *handler;
 } opinfo;
 
-opinfo opcode_to_opinfo[] = {
+static const opinfo opcode_to_opinfo[] = {
     [OP_ABORT] = {false, false, false, true, op_abort_handler},
     [OP_PUSHI] = {true, false, false, false, op_pushi_handler},
     [OP_LOADI] = {true, false, false, false, op_loadi_handler},
@@ -743,7 +743,7 @@ static void trace_compile_handler(scode *trace_head)
     size_t pc = vm_trace.pc;
     size_t trace_size = 0;
 
-    opinfo *info = &opcode_to_opinfo[bytecode[pc]];
+    const opinfo *info = &opcode_to_opinfo[bytecode[pc]];
     scode *trace_tail = trace_head;
     while (!info->is_final && !info->is_branch && trace_size < MAX_TRACE_LEN - 2) {
         if (info->is_abs_jump) {
