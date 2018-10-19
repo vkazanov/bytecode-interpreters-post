@@ -1,0 +1,35 @@
+# sum numbers from 1 to 65535
+
+# init the current sum and the index
+PUSHI 1
+PUSHI 1
+# stack s=1, i=1
+STOREI 0
+# stack: s=1
+
+# routine: increment the counter, add it to the current sum
+incrementandadd:
+
+# check if index is too big
+LOADI 0
+# stack: s, i
+ADDI 1
+# stack: s, i+1
+DUP
+# stack: s, i+1, i+1
+GREATER_OR_EQUALI 65535
+# stack: s, i+1, 1 or 0
+JUMP_IF_TRUE done
+# stack: s, i+1
+DUP
+# stack: s, i+1, i+1
+STOREI 0
+# stack: s, i+1
+ADD
+# stack: s+i+1
+JUMP incrementandadd
+
+done:
+DISCARD
+PRINT
+DONE
