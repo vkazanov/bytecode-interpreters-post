@@ -30,6 +30,6 @@ jittest: jittest.c
 	./jittest
 
 clean:
-	rm -vf $(INTERPRETERS) pigletvm pigletvm-test
+	rm -vf $(INTERPRETERS) pigletvm pigletvm-test jittest
 
 .PHONY: all clean pigletvm-test

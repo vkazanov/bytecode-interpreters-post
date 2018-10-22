@@ -117,7 +117,7 @@
 
   - [X] pigletvm libjit plan
 
-  - [ ] imitate an instruction pointer increment/decrement (using a pointer?)
+  - [X] imitate an instruction pointer increment/decrement
 
   - [ ] imitate a stack push/pop/peek
 
