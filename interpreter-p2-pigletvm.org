@@ -119,11 +119,11 @@
 
   - [X] imitate an instruction pointer increment/decrement
 
-  - [ ] imitate a stack push/pop/peek
+  - [X] imitate a stack push/pop/peek
 
-  - [ ] imitate a setjump/longjump
+  - [X] imitate a setjump/longjump
 
-  - [ ] imitate an instruction chain
+    should be done as a part of the standard exception handling logic
 
   - [ ] plan the integration of jit
 

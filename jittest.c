@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <setjmp.h>
 
 #include <jit/jit.h>
 #include <jit/jit-dump.h>
@@ -10,6 +11,13 @@ struct {
     uint64_t pc;
     uint64_t stack[5];
 } vm = {0, {1, 2, 3, 4, 5}};
+
+jit_type_t longjmp_signature;
+
+void exception_handler(int exception_type)
+{
+    fprintf(stderr, "handling an exception: %d\n", exception_type);
+}
 
 void compile_add_pc(jit_function_t function, uint64_t diff)
 {
@@ -44,6 +52,14 @@ void compile_push(jit_function_t function, uint64_t arg)
     jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
 }
 
+void compile_exception(jit_function_t function)
+{
+    jit_value_t l = jit_value_get_param(function, 2);
+    jit_value_t r = jit_value_get_param(function, 3);
+    jit_value_t temp = jit_insn_div(function, l, r);
+    jit_insn_return(function, temp);
+}
+
 int main(int argc, char *argv[])
 {
     (void) argc; (void) argv;
@@ -62,11 +78,10 @@ int main(int argc, char *argv[])
     jit_function_t function = jit_function_create(context, signature);
 
     compile_add_pc(function, 11);
-
     compile_push(function, 0);
     compile_push(function, 0);
     compile_push(function, 0);
-
+    compile_exception(function);
     compile_sum(function, 0);
 
     jit_context_build_end(context);
@@ -74,15 +89,20 @@ int main(int argc, char *argv[])
     jit_dump_function(stderr, function, "uncompiled");
     jit_function_compile(function);
 
-    uint64_t x = 3, y = 10, result = 0;
+    uint64_t x = 10, y = 0, result = 0;
     uint64_t *pc_ptr = &vm.pc, *stack_ptr = &vm.stack[0];
     uint64_t **stack_ptr_ptr = &stack_ptr;
-    void *args[4] = {&stack_ptr_ptr, &pc_ptr, &x, &y};
-    jit_function_apply(function, args, &result);
 
-    printf("%" PRIu64 "\n", result);
-    printf("%" PRIu64 "\n", vm.pc);
-    printf("%" PRIu64 "\n", *stack_ptr);
+    jit_exception_set_handler(exception_handler);
+
+    void *args[5] = {&stack_ptr_ptr, &pc_ptr, &x, &y};
+    if (jit_function_apply(function, args, &result) == 0) {
+        puts("EXCEPTION!");
+    };
+
+    printf("result=%" PRIu64 "\n", result);
+    printf("pc=%" PRIu64 "\n", vm.pc);
+    printf("stack top=%" PRIu64 "\n", *stack_ptr);
 
     return 0;
 }
