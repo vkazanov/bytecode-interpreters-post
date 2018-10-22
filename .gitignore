@@ -58,6 +58,7 @@ dkms.conf
 
 # pigletvm
 pigletvm
+jittest
 test*.pvm
 *.bin
 *-test

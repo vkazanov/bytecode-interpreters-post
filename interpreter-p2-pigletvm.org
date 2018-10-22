@@ -109,3 +109,22 @@
   non-optimized:
 
   -O3: 0.36
+* TODO libjit
+
+  - [X] compile libjit
+
+  - [X] come up with a simple example function
+
+  - [X] pigletvm libjit plan
+
+  - [ ] imitate an instruction pointer increment/decrement (using a pointer?)
+
+  - [ ] imitate a stack push/pop/peek
+
+  - [ ] imitate a setjump/longjump
+
+  - [ ] imitate an instruction chain
+
+  - [ ] plan the integration of jit
+
+* TODO план статьи
