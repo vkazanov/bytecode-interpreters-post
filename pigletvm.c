@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <setjmp.h>
+#include <jit/jit.h>
 
 #include "pigletvm.h"
 
@@ -823,6 +824,72 @@ uint64_t vm_trace_get_result(void)
 {
     return vm_trace.result;
 }
+
+/*
+ * Jit-based bytecode interpreter
+ *  */
+
+typedef void trace_handler(void);
+
+typedef struct trace_record {
+    jit_function_t function;
+    trace_handler *handler;
+} trace_record;
+
+static struct {
+    uint8_t *bytecode;
+    size_t pc;
+    bool is_running;
+    interpret_result error;
+
+    trace_record trace_cache[MAX_CODE_LEN];
+
+    /* Stack */
+    uint64_t stack[STACK_MAX];
+    uint64_t *stack_top;
+
+    /* Operational memory */
+    uint64_t memory[MEMORY_SIZE];
+
+    /* A single register containing the result */
+    uint64_t result;
+} vm_jit;
+
+static void trace_jit_compile(void)
+{
+    size_t pc = vm_jit.pc;
+
+    /* TODO: finish the compilation logic */
+}
+
+static void vm_jit_reset(uint8_t *bytecode)
+{
+    vm_jit = (typeof(vm_jit)) {
+        .stack_top = vm_jit.stack,
+        .bytecode = bytecode,
+        .is_running = true
+    };
+
+    for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
+        vm_jit.trace_cache[trace_i].handler = trace_jit_compile;
+}
+
+
+interpret_result vm_interpret_jit(uint8_t *bytecode)
+{
+    vm_jit_reset(bytecode);
+
+    while(vm_jit.is_running)
+        vm_jit.trace_cache[vm_jit.pc].handler();
+
+    return vm_jit.error;
+}
+
+uint64_t vm_jit_get_result(void)
+{
+    return vm_jit.result;
+}
+
 
 /* Local Variables: */
 /* rmsbolt-command: "gcc -O3" */
