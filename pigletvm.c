@@ -689,15 +689,15 @@ static void op_print_handler(scode *code)
     NEXT_HANDLER(code);
 }
 
-typedef struct opinfo {
+typedef struct trace_opinfo {
     bool has_arg;
     bool is_branch;
     bool is_abs_jump;
     bool is_final;
     trace_op_handler *handler;
-} opinfo;
+} trace_opinfo;
 
-static const opinfo opcode_to_opinfo[] = {
+static const trace_opinfo trace_opcode_to_opinfo[] = {
     [OP_ABORT] = {false, false, false, true, op_abort_handler},
     [OP_PUSHI] = {true, false, false, false, op_pushi_handler},
     [OP_LOADI] = {true, false, false, false, op_loadi_handler},
@@ -744,7 +744,7 @@ static void trace_compile_handler(scode *trace_head)
     size_t pc = vm_trace.pc;
     size_t trace_size = 0;
 
-    const opinfo *info = &opcode_to_opinfo[bytecode[pc]];
+    const trace_opinfo *info = &trace_opcode_to_opinfo[bytecode[pc]];
     scode *trace_tail = trace_head;
     while (!info->is_final && !info->is_branch && trace_size < MAX_TRACE_LEN - 2) {
         if (info->is_abs_jump) {
@@ -768,7 +768,7 @@ static void trace_compile_handler(scode *trace_head)
         }
 
         /* Get the next info and move the scode pointer */
-        info = &opcode_to_opinfo[bytecode[pc]];
+        info = &trace_opcode_to_opinfo[bytecode[pc]];
     }
 
     if (info->is_final) {
@@ -855,6 +855,72 @@ static struct {
     uint64_t result;
 } vm_jit;
 
+/* TODO: op_abort_compiler */
+/* TODO: op_pushi_compiler */
+/* TODO: op_loadi_compiler */
+/* TODO: op_loadaddi_compiler */
+/* TODO: op_storei_compiler */
+/* TODO: op_load_compiler */
+/* TODO: op_store_compiler */
+/* TODO: op_dup_compiler */
+/* TODO: op_discard_compiler */
+/* TODO: op_add_compiler */
+/* TODO: op_addi_compiler */
+/* TODO: op_sub_compiler */
+/* TODO: op_div_compiler */
+/* TODO: op_mul_compiler */
+/* TODO: op_jump_compiler */
+/* TODO: op_jump_if_true_compiler */
+/* TODO: op_jump_if_false_compiler */
+/* TODO: op_equal_compiler */
+/* TODO: op_less_compiler */
+/* TODO: op_less_or_equal_compiler */
+/* TODO: op_greater_compiler */
+/* TODO: op_greater_or_equal_compiler */
+/* TODO: op_greater_or_equali_compiler */
+/* TODO: op_pop_res_compiler */
+/* TODO: op_done_compiler */
+/* TODO: op_print_compiler */
+
+typedef void jit_op_compiler(jit_function_t function);
+
+typedef struct jit_opinfo {
+    bool has_arg;
+    bool is_branch;
+    bool is_abs_jump;
+    bool is_final;
+    jit_op_compiler *compiler;
+} jit_opinfo;
+
+static const trace_opinfo jit_opcode_to_opinfo[] = {
+    [OP_ABORT] = {false, false, false, true, op_abort_compiler},
+    [OP_PUSHI] = {true, false, false, false, op_pushi_compiler},
+    [OP_LOADI] = {true, false, false, false, op_loadi_compiler},
+    [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler},
+    [OP_STOREI] = {true, false, false, false, op_storei_compiler},
+    [OP_LOAD] = {false, false, false, false, op_load_compiler},
+    [OP_STORE] = {false, false, false, false, op_store_compiler},
+    [OP_DUP] = {false, false, false, false, op_dup_compiler},
+    [OP_DISCARD] = {false, false, false, false, op_discard_compiler},
+    [OP_ADD] = {false, false, false, false, op_add_compiler},
+    [OP_ADDI] = {true, false, false, false, op_addi_compiler},
+    [OP_SUB] = {false, false, false, false, op_sub_compiler},
+    [OP_DIV] = {false, false, false, false, op_div_compiler},
+    [OP_MUL] = {false, false, false, false, op_mul_compiler},
+    [OP_JUMP] = {true, false, true, false, op_jump_compiler},
+    [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_compiler},
+    [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_compiler},
+    [OP_EQUAL] = {false, false, false, false, op_equal_compiler},
+    [OP_LESS] = {false, false, false, false, op_less_compiler},
+    [OP_LESS_OR_EQUAL] = {false, false, false, false, op_less_or_equal_compiler},
+    [OP_GREATER] = {false, false, false, false, op_greater_compiler},
+    [OP_GREATER_OR_EQUAL] = {false, false, false, false, op_greater_or_equal_compiler},
+    [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_compiler},
+    [OP_POP_RES] = {false, false, false, false, op_pop_res_compiler},
+    [OP_DONE] = {false, false, false, true, op_done_compiler},
+    [OP_PRINT] = {false, false, false, false, op_print_compiler},
+};
+
 static void trace_jit_compile(void)
 {
     size_t pc = vm_jit.pc;
@@ -873,7 +939,6 @@ static void vm_jit_reset(uint8_t *bytecode)
     for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
         vm_jit.trace_cache[trace_i].handler = trace_jit_compile;
 }
-
 
 interpret_result vm_interpret_jit(uint8_t *bytecode)
 {
