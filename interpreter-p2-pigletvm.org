@@ -129,11 +129,13 @@
 
   - [X] get the scaffolding in place
 
-  - [ ] add the tail handling compiler
+  - [X] run with DONE/ABORT only
 
-  - [ ] run with DONE/ABORT only
+  - [X] add the tail handling compiler
 
-  - [ ] add stack handling routines
+  - [X] add separate stack handling routines
+
+  - [ ] extract common stack op compiling into separate compiling helpers
 
   - [ ] add everything but the branching instructions
 

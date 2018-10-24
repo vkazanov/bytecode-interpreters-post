@@ -861,6 +861,7 @@ static struct {
 static interpret_result error_eos = ERROR_END_OF_STREAM;
 
 /* Arg types */
+static jit_type_t jit_stack_ptr_type;
 static jit_type_t jit_stack_ptr_ptr_type;
 static jit_type_t jit_pc_ptr_type;
 static jit_type_t jit_is_running_ptr_type;
@@ -871,7 +872,7 @@ static jit_type_t jit_result_ptr_type;
 /* The main jitted function type */
 static jit_type_t jit_function_signature;
 
-void op_abort_compiler(jit_function_t function, uint64_t arg)
+static void op_abort_compiler(jit_function_t function, uint64_t arg)
 {
     (void) arg;
 
@@ -881,7 +882,7 @@ void op_abort_compiler(jit_function_t function, uint64_t arg)
     jit_insn_throw(function, errno_value_ptr);
 }
 
-void op_done_compiler(jit_function_t function, uint64_t arg)
+static void op_done_compiler(jit_function_t function, uint64_t arg)
 {
     (void) arg;
 
@@ -889,6 +890,39 @@ void op_done_compiler(jit_function_t function, uint64_t arg)
     jit_value_t false_value = jit_value_create_nint_constant(function, jit_type_ubyte, false);
     jit_insn_store_relative(function, is_running_ptr, 0, false_value);
     jit_insn_return(function, NULL);
+}
+
+static void op_pushi_compiler(jit_function_t function, uint64_t arg)
+{
+    jit_value_t arg_value = jit_value_create_long_constant(function, jit_type_ulong, arg);
+
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Store the new stack value */
+    jit_insn_store_relative(function, stack_ptr, 0, arg_value);
+
+    /* Move the top of the stack */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, (long)jit_type_get_size(jit_stack_ptr_type));
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+}
+
+static void op_pop_res_compiler(jit_function_t function, uint64_t arg)
+{
+    (void) arg;
+
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+    jit_value_t result_ptr = jit_value_get_param(function, 3);
+
+    /* Move the top of the stack */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, -(long)jit_type_get_size(jit_stack_ptr_type));
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+
+    /* Get the result value of the stack and store it into the result register */
+    jit_value_t result_value = jit_insn_load_relative(function, stack_ptr, 0, jit_type_ulong);
+    jit_insn_store_relative(function, result_ptr, 0, result_value);
+
 }
 
 typedef void jit_op_compiler(jit_function_t function, uint64_t arg);
@@ -903,7 +937,7 @@ typedef struct jit_opinfo {
 
 static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_ABORT] = {false, false, false, true, op_abort_compiler},
-    /* [OP_PUSHI] = {true, false, false, false, op_pushi_compiler}, */
+    [OP_PUSHI] = {true, false, false, false, op_pushi_compiler},
     /* [OP_LOADI] = {true, false, false, false, op_loadi_compiler}, */
     /* [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler}, */
     /* [OP_STOREI] = {true, false, false, false, op_storei_compiler}, */
@@ -925,7 +959,7 @@ static const jit_opinfo jit_opcode_to_opinfo[] = {
     /* [OP_GREATER] = {false, false, false, false, op_greater_compiler}, */
     /* [OP_GREATER_OR_EQUAL] = {false, false, false, false, op_greater_or_equal_compiler}, */
     /* [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_compiler}, */
-    /* [OP_POP_RES] = {false, false, false, false, op_pop_res_compiler}, */
+    [OP_POP_RES] = {false, false, false, false, op_pop_res_compiler},
     [OP_DONE] = {false, false, false, true, op_done_compiler},
     /* [OP_PRINT] = {false, false, false, false, op_print_compiler}, */
 };
@@ -1032,9 +1066,10 @@ static void vm_jit_reset(uint8_t *bytecode)
     for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
         vm_jit.trace_cache[trace_i].handler = trace_jit_compile;
 
+    /* Init various libjit helper values */
     jit_pc_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
-    jit_type_t stack_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
-    jit_stack_ptr_ptr_type = jit_type_create_pointer(stack_ptr_type, 1);
+    jit_stack_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
+    jit_stack_ptr_ptr_type = jit_type_create_pointer(jit_stack_ptr_type, 1);
     jit_is_running_ptr_type = jit_type_create_pointer(jit_type_sys_bool, 1);
     jit_result_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
 
