@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
         result = vm_interpret_jit(code);
         assert(result == SUCCESS);
-        assert(vm_trace_get_result() == 0);
+        assert(vm_jit_get_result() == 0);
     }
 
     {
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
         result = vm_interpret_jit(code);
         assert(result == ERROR_END_OF_STREAM);
-        assert(vm_trace_get_result() == 0);
+        assert(vm_jit_get_result() == 0);
     }
 
     {
@@ -72,10 +72,8 @@ int main(int argc, char *argv[])
 
         result = vm_interpret_jit(code);
         assert(result == SUCCESS);
-        assert(vm_trace_get_result() == 5);
+        assert(vm_jit_get_result() == 5);
     }
-
-    return 0;
 
     {
         /* Push and duplicate the result, check if both args made it */
@@ -98,7 +96,13 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 10);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 10);
     }
+
+    return 0;
 
     {
         /* Store a value into memory, load it, the pop */
