@@ -19,10 +19,10 @@ test: all
 	$(CC) $(CFLAGS) $< -o $@
 
 pigletvm: pigletvm.c pigletvm-exec.c
-	$(CC) $(CFLAGS) -I$(LIBJIT_INCLUDE_PATH) $(LIBJIT_AR) $^  $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) -I$(LIBJIT_INCLUDE_PATH) $^ $(LIBJIT_AR)  $(LDFLAGS) -o $@
 
 pigletvm-test: pigletvm.c pigletvm-test.c
-	$(CC) -g $(CFLAGS) -I$(LIBJIT_INCLUDE_PATH) $(LIBJIT_AR) $^ $(LDFLAGS) -o $@
+	$(CC) -g $(CFLAGS) -I$(LIBJIT_INCLUDE_PATH) $^ $(LIBJIT_AR) $(LDFLAGS) -o $@
 	./pigletvm-test
 
 jittest: jittest.c

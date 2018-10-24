@@ -2,8 +2,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
 #include <setjmp.h>
 #include <jit/jit.h>
+#include <jit/jit-dump.h>
 
 #include "pigletvm.h"
 
@@ -855,34 +857,24 @@ static struct {
     uint64_t result;
 } vm_jit;
 
-/* TODO: op_abort_compiler */
-/* TODO: op_pushi_compiler */
-/* TODO: op_loadi_compiler */
-/* TODO: op_loadaddi_compiler */
-/* TODO: op_storei_compiler */
-/* TODO: op_load_compiler */
-/* TODO: op_store_compiler */
-/* TODO: op_dup_compiler */
-/* TODO: op_discard_compiler */
-/* TODO: op_add_compiler */
-/* TODO: op_addi_compiler */
-/* TODO: op_sub_compiler */
-/* TODO: op_div_compiler */
-/* TODO: op_mul_compiler */
-/* TODO: op_jump_compiler */
-/* TODO: op_jump_if_true_compiler */
-/* TODO: op_jump_if_false_compiler */
-/* TODO: op_equal_compiler */
-/* TODO: op_less_compiler */
-/* TODO: op_less_or_equal_compiler */
-/* TODO: op_greater_compiler */
-/* TODO: op_greater_or_equal_compiler */
-/* TODO: op_greater_or_equali_compiler */
-/* TODO: op_pop_res_compiler */
-/* TODO: op_done_compiler */
-/* TODO: op_print_compiler */
+/* Arg types */
+static jit_type_t jit_stack_ptr_ptr_type;
+static jit_type_t jit_pc_ptr_type;
+static jit_type_t jit_is_running_ptr_type;
 
-typedef void jit_op_compiler(jit_function_t function);
+static jit_type_t jit_function_signature;
+
+void op_abort_compiler(jit_function_t function, uint64_t arg)
+{
+
+}
+
+void op_done_compiler(jit_function_t function, uint64_t arg)
+{
+
+}
+
+typedef void jit_op_compiler(jit_function_t function, uint64_t arg);
 
 typedef struct jit_opinfo {
     bool has_arg;
@@ -892,40 +884,121 @@ typedef struct jit_opinfo {
     jit_op_compiler *compiler;
 } jit_opinfo;
 
-static const trace_opinfo jit_opcode_to_opinfo[] = {
+static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_ABORT] = {false, false, false, true, op_abort_compiler},
-    [OP_PUSHI] = {true, false, false, false, op_pushi_compiler},
-    [OP_LOADI] = {true, false, false, false, op_loadi_compiler},
-    [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler},
-    [OP_STOREI] = {true, false, false, false, op_storei_compiler},
-    [OP_LOAD] = {false, false, false, false, op_load_compiler},
-    [OP_STORE] = {false, false, false, false, op_store_compiler},
-    [OP_DUP] = {false, false, false, false, op_dup_compiler},
-    [OP_DISCARD] = {false, false, false, false, op_discard_compiler},
-    [OP_ADD] = {false, false, false, false, op_add_compiler},
-    [OP_ADDI] = {true, false, false, false, op_addi_compiler},
-    [OP_SUB] = {false, false, false, false, op_sub_compiler},
-    [OP_DIV] = {false, false, false, false, op_div_compiler},
-    [OP_MUL] = {false, false, false, false, op_mul_compiler},
-    [OP_JUMP] = {true, false, true, false, op_jump_compiler},
-    [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_compiler},
-    [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_compiler},
-    [OP_EQUAL] = {false, false, false, false, op_equal_compiler},
-    [OP_LESS] = {false, false, false, false, op_less_compiler},
-    [OP_LESS_OR_EQUAL] = {false, false, false, false, op_less_or_equal_compiler},
-    [OP_GREATER] = {false, false, false, false, op_greater_compiler},
-    [OP_GREATER_OR_EQUAL] = {false, false, false, false, op_greater_or_equal_compiler},
-    [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_compiler},
-    [OP_POP_RES] = {false, false, false, false, op_pop_res_compiler},
+    /* [OP_PUSHI] = {true, false, false, false, op_pushi_compiler}, */
+    /* [OP_LOADI] = {true, false, false, false, op_loadi_compiler}, */
+    /* [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler}, */
+    /* [OP_STOREI] = {true, false, false, false, op_storei_compiler}, */
+    /* [OP_LOAD] = {false, false, false, false, op_load_compiler}, */
+    /* [OP_STORE] = {false, false, false, false, op_store_compiler}, */
+    /* [OP_DUP] = {false, false, false, false, op_dup_compiler}, */
+    /* [OP_DISCARD] = {false, false, false, false, op_discard_compiler}, */
+    /* [OP_ADD] = {false, false, false, false, op_add_compiler}, */
+    /* [OP_ADDI] = {true, false, false, false, op_addi_compiler}, */
+    /* [OP_SUB] = {false, false, false, false, op_sub_compiler}, */
+    /* [OP_DIV] = {false, false, false, false, op_div_compiler}, */
+    /* [OP_MUL] = {false, false, false, false, op_mul_compiler}, */
+    /* [OP_JUMP] = {true, false, true, false, op_jump_compiler}, */
+    /* [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_compiler}, */
+    /* [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_compiler}, */
+    /* [OP_EQUAL] = {false, false, false, false, op_equal_compiler}, */
+    /* [OP_LESS] = {false, false, false, false, op_less_compiler}, */
+    /* [OP_LESS_OR_EQUAL] = {false, false, false, false, op_less_or_equal_compiler}, */
+    /* [OP_GREATER] = {false, false, false, false, op_greater_compiler}, */
+    /* [OP_GREATER_OR_EQUAL] = {false, false, false, false, op_greater_or_equal_compiler}, */
+    /* [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_compiler}, */
+    /* [OP_POP_RES] = {false, false, false, false, op_pop_res_compiler}, */
     [OP_DONE] = {false, false, false, true, op_done_compiler},
-    [OP_PRINT] = {false, false, false, false, op_print_compiler},
+    /* [OP_PRINT] = {false, false, false, false, op_print_compiler}, */
 };
 
-static void trace_jit_compile(void)
+static void trace_jit_runner(void)
 {
     size_t pc = vm_jit.pc;
 
-    /* TODO: finish the compilation logic */
+    jit_function_t function = vm_jit.trace_cache[pc].function;
+
+    uint64_t **stack_top_ptr_ptr = &vm_jit.stack_top;
+    uint64_t *pc_ptr = &vm_jit.pc;
+    bool *is_running_ptr = &vm_jit.is_running;
+
+    void *args[3] = {&stack_top_ptr_ptr, &pc_ptr, &is_running_ptr};
+    if (jit_function_apply(function, args, NULL) == 0) {
+        /* TODO: Handle exceptions */
+        puts("EXCEPTION");
+    };
+}
+
+static void trace_jit_compile(void)
+{
+    uint8_t *bytecode = vm_jit.bytecode;
+    size_t pc_to_compile = vm_jit.pc;
+
+    /* Init the function to be compiled */
+    jit_context_t context = jit_context_create();
+    jit_context_build_start(context);
+    jit_function_t function = jit_function_create(context, jit_function_signature);
+
+    const jit_opinfo *info = &jit_opcode_to_opinfo[bytecode[pc_to_compile]];
+    while (!info->is_final && !info->is_branch) {
+        if (info->is_abs_jump) {
+            /* Absolute jumps need special care: we just jump continue compiling functions starting
+             * with the target pc of the instruction*/
+            uint64_t target = ARG_AT_PC(bytecode, pc_to_compile);
+            pc_to_compile = target;
+        } else {
+            /* Get the compiling function */
+            jit_op_compiler *compiler = info->compiler;
+
+            /* Optional arg */
+            uint64_t arg = 0;
+            if (info->has_arg) {
+                arg = ARG_AT_PC(bytecode, pc_to_compile);
+                pc_to_compile += 2;
+            }
+
+            /* Add the body of the instruction to the function to be compiled */
+            compiler(function, arg);
+
+            /* Skip one more byte to the next instruction */
+            pc_to_compile++;
+        }
+
+        /* Get the next info */
+        info = &jit_opcode_to_opinfo[bytecode[pc_to_compile]];
+    }
+
+    if (info->is_final) {
+        /* TODO: last instruction */
+        /* trace_tail->handler = info->handler; */
+    } else if (info->is_branch) {
+        /* TODO: jump handler */
+
+        /* add a tail to skip the jump instruction - if the branch is not taken */
+        /* trace_tail->handler = trace_prejump_handler; */
+        /* trace_tail->arg = pc_to_compile + 3; */
+
+        /* now, the jump handler itself */
+        /* trace_tail++; */
+        /* trace_tail->handler = info->handler; */
+        /* trace_tail->arg = ARG_AT_PC(bytecode, pc_to_compile); */
+    } else {
+        /* This is impossible, we only end traces on last instructions or branches */
+        assert(false);
+    }
+
+    /* Finalize and compile the function */
+    jit_context_build_end(context);
+    jit_dump_function(stderr, function, "uncompiled");
+    jit_function_compile(function);
+
+    /* Replace the compiling handler with the running handler */
+    vm_jit.trace_cache[vm_jit.pc].function = function;
+    vm_jit.trace_cache[vm_jit.pc].handler = trace_jit_runner;
+
+    /* ...and run that thing */
+    vm_jit.trace_cache[vm_jit.pc].handler();
 }
 
 static void vm_jit_reset(uint8_t *bytecode)
@@ -938,6 +1011,16 @@ static void vm_jit_reset(uint8_t *bytecode)
 
     for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
         vm_jit.trace_cache[trace_i].handler = trace_jit_compile;
+
+    jit_pc_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
+    jit_type_t stack_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
+    jit_stack_ptr_ptr_type = jit_type_create_pointer(stack_ptr_type, 1);
+    jit_is_running_ptr_type = jit_type_create_pointer(jit_type_int, 1);
+
+    jit_type_t params[] = {jit_stack_ptr_ptr_type, jit_pc_ptr_type, jit_is_running_ptr_type};
+    jit_function_signature = jit_type_create_signature(
+        jit_abi_cdecl, jit_type_void, params, sizeof(params) / sizeof(params[0]), 1
+    );
 }
 
 interpret_result vm_interpret_jit(uint8_t *bytecode)
