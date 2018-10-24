@@ -125,6 +125,22 @@
 
     should be done as a part of the standard exception handling logic
 
-  - [ ] plan the integration of jit
+  - [X] plan the integration of jit
+
+  - [X] get the scaffolding in place
+
+  - [ ] add the tail handling compiler
+
+  - [ ] run with DONE/ABORT only
+
+  - [ ] add stack handling routines
+
+  - [ ] add everything but the branching instructions
+
+  - [ ] finish the branching instruction
+
+  - [ ] run the code
+
+  - [ ] measure the code
 
 * TODO план статьи

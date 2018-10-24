@@ -857,21 +857,38 @@ static struct {
     uint64_t result;
 } vm_jit;
 
+/* Need addressable err values */
+static interpret_result error_eos = ERROR_END_OF_STREAM;
+
 /* Arg types */
 static jit_type_t jit_stack_ptr_ptr_type;
 static jit_type_t jit_pc_ptr_type;
 static jit_type_t jit_is_running_ptr_type;
+static jit_type_t jit_result_ptr_type;
 
+/* Errors to be throw from functions return a pointer to a value */
+
+/* The main jitted function type */
 static jit_type_t jit_function_signature;
 
 void op_abort_compiler(jit_function_t function, uint64_t arg)
 {
+    (void) arg;
 
+    jit_value_t errno_value_ptr = jit_value_create_nint_constant(
+        function, jit_result_ptr_type, (long)&error_eos
+    );
+    jit_insn_throw(function, errno_value_ptr);
 }
 
 void op_done_compiler(jit_function_t function, uint64_t arg)
 {
+    (void) arg;
 
+    jit_value_t is_running_ptr = jit_value_get_param(function, 2);
+    jit_value_t false_value = jit_value_create_nint_constant(function, jit_type_ubyte, false);
+    jit_insn_store_relative(function, is_running_ptr, 0, false_value);
+    jit_insn_return(function, NULL);
 }
 
 typedef void jit_op_compiler(jit_function_t function, uint64_t arg);
@@ -922,11 +939,14 @@ static void trace_jit_runner(void)
     uint64_t **stack_top_ptr_ptr = &vm_jit.stack_top;
     uint64_t *pc_ptr = &vm_jit.pc;
     bool *is_running_ptr = &vm_jit.is_running;
+    uint64_t *result_ptr = &vm_jit.result;
 
-    void *args[3] = {&stack_top_ptr_ptr, &pc_ptr, &is_running_ptr};
+    void *args[] = {&stack_top_ptr_ptr, &pc_ptr, &is_running_ptr, &result_ptr};
     if (jit_function_apply(function, args, NULL) == 0) {
-        /* TODO: Handle exceptions */
-        puts("EXCEPTION");
+        /* The only user-defined exception we have is ERROR_END_OF_STREAM on OP_ABORT */
+        vm_jit.is_running = false;
+        interpret_result *error_code_ptr = jit_exception_get_last_and_clear();
+        vm_jit.error = *error_code_ptr;
     };
 }
 
@@ -970,8 +990,8 @@ static void trace_jit_compile(void)
     }
 
     if (info->is_final) {
-        /* TODO: last instruction */
-        /* trace_tail->handler = info->handler; */
+        /* we just compile the finalizing handler, nothing special here */
+        info->compiler(function, 0);
     } else if (info->is_branch) {
         /* TODO: jump handler */
 
@@ -990,7 +1010,7 @@ static void trace_jit_compile(void)
 
     /* Finalize and compile the function */
     jit_context_build_end(context);
-    jit_dump_function(stderr, function, "uncompiled");
+    jit_dump_function(stderr, function, "uncompiled"); /* debug */
     jit_function_compile(function);
 
     /* Replace the compiling handler with the running handler */
@@ -1015,9 +1035,10 @@ static void vm_jit_reset(uint8_t *bytecode)
     jit_pc_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
     jit_type_t stack_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
     jit_stack_ptr_ptr_type = jit_type_create_pointer(stack_ptr_type, 1);
-    jit_is_running_ptr_type = jit_type_create_pointer(jit_type_int, 1);
+    jit_is_running_ptr_type = jit_type_create_pointer(jit_type_sys_bool, 1);
+    jit_result_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
 
-    jit_type_t params[] = {jit_stack_ptr_ptr_type, jit_pc_ptr_type, jit_is_running_ptr_type};
+    jit_type_t params[] = {jit_stack_ptr_ptr_type, jit_pc_ptr_type, jit_is_running_ptr_type, jit_result_ptr_type};
     jit_function_signature = jit_type_create_signature(
         jit_abi_cdecl, jit_type_void, params, sizeof(params) / sizeof(params[0]), 1
     );

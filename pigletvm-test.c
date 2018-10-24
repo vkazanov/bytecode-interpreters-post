@@ -13,6 +13,50 @@ int main(int argc, char *argv[])
     (void) argc; (void) argv;
 
     {
+        /* Just return immediately */
+        uint8_t code[] = { OP_DONE };
+
+        interpret_result result = vm_interpret(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 0);
+
+        result = vm_interpret_threaded(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 0);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 0);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 0);
+    }
+
+    {
+        /* Just abort immediately */
+        uint8_t code[] = { OP_ABORT };
+
+        interpret_result result = vm_interpret(code);
+        assert(result == ERROR_END_OF_STREAM);
+        assert(vm_get_result() == 0);
+
+        result = vm_interpret_threaded(code);
+        assert(result == ERROR_END_OF_STREAM);
+        assert(vm_get_result() == 0);
+
+        result = vm_interpret_trace(code);
+        assert(result == ERROR_END_OF_STREAM);
+        assert(vm_trace_get_result() == 0);
+
+        result = vm_interpret_jit(code);
+        assert(result == ERROR_END_OF_STREAM);
+        assert(vm_trace_get_result() == 0);
+    }
+
+    return 0;
+
+    {
         /* Push and pop the result */
         uint8_t code[] = { OP_PUSHI, ENCODE_ARG(5u), OP_POP_RES, OP_DONE };
 
