@@ -148,8 +148,6 @@ int main(int argc, char *argv[])
         assert(vm_jit_get_result() == 15);
     }
 
-    return 0;
-
     {
         /* Store a value into memory, load it, the pop */
         uint8_t code[] = {
@@ -170,7 +168,13 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 111);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 111);
     }
+
+    return 0;
 
     {
         /* Store a value into memory, load it, the pop */

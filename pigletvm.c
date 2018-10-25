@@ -861,6 +861,7 @@ static struct {
 static interpret_result error_eos = ERROR_END_OF_STREAM;
 
 /* Arg types */
+static jit_type_t jit_memory_ptr_type;
 static jit_type_t jit_stack_ptr_type;
 static jit_type_t jit_stack_ptr_ptr_type;
 static jit_type_t jit_pc_ptr_type;
@@ -906,6 +907,48 @@ static void op_pushi_compiler(jit_function_t function, uint64_t arg)
 
     /* Move the top of the stack */
     jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, stack_ptrdiff);
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+}
+
+static void op_loadi_compiler(jit_function_t function, uint64_t arg)
+{
+    const long memory_offset = (long)jit_type_get_size(jit_type_ulong) * arg;
+    jit_value_t memory_ptr = jit_value_create_nint_constant(
+        function, jit_memory_ptr_type, (long)&vm_jit.memory
+    );
+
+    /* Get the value from memory */
+    jit_value_t val_value = jit_insn_load_relative(function, memory_ptr, memory_offset, jit_type_ulong);
+
+    /* Push it onto stack */
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+    jit_insn_store_relative(function, stack_ptr, 0, val_value);
+
+    /* Move the top of the stack */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, stack_ptrdiff);
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+
+}
+
+static void op_storei_compiler(jit_function_t function, uint64_t arg)
+{
+    const long memory_offset = (long)jit_type_get_size(jit_type_ulong) * arg;
+    jit_value_t memory_ptr = jit_value_create_nint_constant(
+        function, jit_memory_ptr_type, (long)&vm_jit.memory
+    );
+
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Get the top of the stack and store it into memory */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_value_t val_value = jit_insn_load_relative(function, stack_ptr_moved, 0, jit_type_ulong);
+    jit_insn_store_relative(function, memory_ptr, memory_offset, val_value);
+
+    /* Move the top of the stack */
     jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
 }
 
@@ -1002,9 +1045,9 @@ typedef struct jit_opinfo {
 static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_ABORT] = {false, false, false, true, op_abort_compiler},
     [OP_PUSHI] = {true, false, false, false, op_pushi_compiler},
-    /* [OP_LOADI] = {true, false, false, false, op_loadi_compiler}, */
+    [OP_LOADI] = {true, false, false, false, op_loadi_compiler},
     /* [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler}, */
-    /* [OP_STOREI] = {true, false, false, false, op_storei_compiler}, */
+    [OP_STOREI] = {true, false, false, false, op_storei_compiler},
     /* [OP_LOAD] = {false, false, false, false, op_load_compiler}, */
     /* [OP_STORE] = {false, false, false, false, op_store_compiler}, */
     [OP_DUP] = {false, false, false, false, op_dup_compiler},
@@ -1130,8 +1173,9 @@ static void vm_jit_reset(uint8_t *bytecode)
     for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
         vm_jit.trace_cache[trace_i].handler = trace_jit_compile;
 
-    /* Init various libjit helper values */
+    /* Init various libjit helper types and signature */
     jit_pc_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
+    jit_memory_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
     jit_stack_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
     jit_stack_ptr_ptr_type = jit_type_create_pointer(jit_stack_ptr_type, 1);
     jit_is_running_ptr_type = jit_type_create_pointer(jit_type_sys_bool, 1);
