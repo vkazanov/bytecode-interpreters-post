@@ -356,8 +356,6 @@ int main(int argc, char *argv[])
         assert(result == ERROR_DIVISION_BY_ZERO);
     }
 
-    return 0;
-
     {
         /* Absolute jump */
         uint8_t code[] = {
@@ -386,7 +384,13 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 4);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 4);
     }
+
+    return 0;
 
     {
         /* Jump if true, with condition positive */
