@@ -167,6 +167,18 @@ static int run_trace(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
+static int run_jit(uint8_t *bytecode)
+{
+    interpret_result res = vm_interpret_jit(bytecode);
+    if (res != SUCCESS) {
+        fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
+        return EXIT_FAILURE;
+    }
+    uint64_t result_value = vm_get_result();
+    printf("Result value: %" PRIu64 "\n", result_value);
+    return EXIT_SUCCESS;
+}
+
 static void strip_line(char *source, char *target)
 {
     do
@@ -530,6 +542,10 @@ int main(int argc, char *argv[])
         res = run_trace(bytecode);
         TIMER_END(start_time, end_time, "trace code finished");
 
+        TIMER_START(start_time);
+        res = run_jit(bytecode);
+        TIMER_END(start_time, end_time, "jitted code finished");
+
         free(bytecode);
     } else if (0 == strcmp(cmd, "runtimes")) {
         if (argc != 4) {
@@ -562,6 +578,11 @@ int main(int argc, char *argv[])
         for (int i = 0; i < num_iterations; i++)
             res = run_trace(bytecode);
         TIMER_END(start_time, end_time, "trace code finished");
+
+        TIMER_START(start_time);
+        for (int i = 0; i < num_iterations; i++)
+            res = run_jit(bytecode);
+        TIMER_END(start_time, end_time, "jitted code finished");
 
         free(bytecode);
     } else if (0 == strcmp(cmd, "asm")) {

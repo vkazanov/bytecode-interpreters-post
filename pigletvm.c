@@ -1538,7 +1538,6 @@ static void trace_jit_compile(void)
 
     /* Finalize and compile the function */
     jit_context_build_end(context);
-    jit_dump_function(stderr, function, "uncompiled"); /* debug */
     jit_function_compile(function);
 
     /* Replace the compiling handler with the running handler */
