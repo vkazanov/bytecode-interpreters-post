@@ -174,6 +174,46 @@ int main(int argc, char *argv[])
         assert(vm_jit_get_result() == 111);
     }
 
+    {
+        /* Subtraction */
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(6), OP_SUB, OP_POP_RES, OP_DONE };
+        interpret_result result = vm_interpret(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 4);
+
+        result = vm_interpret_threaded(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 4);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 4);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 4);
+    }
+
+    {
+        /* Division */
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(5), OP_DIV, OP_POP_RES, OP_DONE };
+        interpret_result result = vm_interpret(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 2);
+
+        result = vm_interpret_threaded(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 2);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 2);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 2);
+    }
+
     return 0;
 
     {
@@ -198,38 +238,6 @@ int main(int argc, char *argv[])
         vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 112);
-    }
-
-    {
-        /* Subtraction */
-        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(6), OP_SUB, OP_POP_RES, OP_DONE };
-        interpret_result result = vm_interpret(code);
-        assert(result == SUCCESS);
-        assert(vm_get_result() == 4);
-
-        result = vm_interpret_threaded(code);
-        assert(result == SUCCESS);
-        assert(vm_get_result() == 4);
-
-        result = vm_interpret_trace(code);
-        assert(result == SUCCESS);
-        assert(vm_trace_get_result() == 4);
-    }
-
-    {
-        /* Division */
-        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(5), OP_DIV, OP_POP_RES, OP_DONE };
-        interpret_result result = vm_interpret(code);
-        assert(result == SUCCESS);
-        assert(vm_get_result() == 2);
-
-        result = vm_interpret_threaded(code);
-        assert(result == SUCCESS);
-        assert(vm_get_result() == 2);
-
-        result = vm_interpret_trace(code);
-        assert(result == SUCCESS);
-        assert(vm_trace_get_result() == 2);
     }
 
     {
