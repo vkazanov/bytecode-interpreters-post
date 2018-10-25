@@ -149,6 +149,26 @@ int main(int argc, char *argv[])
     }
 
     {
+        /* Immediate arg addition */
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_ADDI, ENCODE_ARG(5), OP_POP_RES, OP_DONE };
+        interpret_result result = vm_interpret(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 15);
+
+        result = vm_interpret_threaded(code);
+        assert(result == SUCCESS);
+        assert(vm_get_result() == 15);
+
+        result = vm_interpret_trace(code);
+        assert(result == SUCCESS);
+        assert(vm_trace_get_result() == 15);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 15);
+    }
+
+    {
         /* Store a value into memory, load it, the pop */
         uint8_t code[] = {
             OP_PUSHI, ENCODE_ARG(111),
