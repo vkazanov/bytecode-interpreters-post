@@ -932,6 +932,28 @@ static void op_loadi_compiler(jit_function_t function, uint64_t arg)
 
 }
 
+static void op_loadaddi_compiler(jit_function_t function, uint64_t arg)
+{
+    /* Get the right-hand value from memory */
+    const long memory_offset = (long)jit_type_get_size(jit_type_ulong) * arg;
+    jit_value_t memory_ptr = jit_value_create_nint_constant(
+        function, jit_memory_ptr_type, (long)&vm_jit.memory
+    );
+    jit_value_t rvalue = jit_insn_load_relative(function, memory_ptr, memory_offset, jit_type_ulong);
+
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Peek the current value */
+    jit_value_t stack_ptr_peek = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_value_t lvalue = jit_insn_load_relative(function, stack_ptr_peek, 0, jit_type_ulong);
+
+    /* Add and put back as a top of the stack */
+    jit_value_t result = jit_insn_add(function, lvalue, rvalue);
+    jit_insn_store_relative(function, stack_ptr_peek, 0, result);
+}
+
 static void op_storei_compiler(jit_function_t function, uint64_t arg)
 {
     const long memory_offset = (long)jit_type_get_size(jit_type_ulong) * arg;
@@ -1141,7 +1163,7 @@ static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_ABORT] = {false, false, false, true, op_abort_compiler},
     [OP_PUSHI] = {true, false, false, false, op_pushi_compiler},
     [OP_LOADI] = {true, false, false, false, op_loadi_compiler},
-    /* [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler}, */
+    [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler},
     [OP_STOREI] = {true, false, false, false, op_storei_compiler},
     /* [OP_LOAD] = {false, false, false, false, op_load_compiler}, */
     /* [OP_STORE] = {false, false, false, false, op_store_compiler}, */
