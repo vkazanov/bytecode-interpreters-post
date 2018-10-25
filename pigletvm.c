@@ -1305,6 +1305,27 @@ static void op_greater_or_equal_compiler(jit_function_t function, uint64_t arg)
     jit_insn_store_relative(function, stack_ptr_peek, 0, result);
 }
 
+static void op_greater_or_equali_compiler(jit_function_t function, uint64_t arg)
+{
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Peek the top of the stack value */
+    jit_value_t stack_ptr_peek = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+
+    /* Get the left-hand value */
+    jit_value_t lvalue = jit_insn_load_relative(function, stack_ptr_peek, 0, jit_type_ulong);
+
+    /* Argument is a right-hand comparison value */
+    jit_value_t rvalue = jit_value_create_long_constant(function, jit_type_ulong, arg);
+
+    /* greater than */
+    jit_value_t result = jit_insn_ge(function, lvalue, rvalue);
+    jit_insn_store_relative(function, stack_ptr_peek, 0, result);
+}
+
 static void op_pop_res_compiler(jit_function_t function, uint64_t arg)
 {
     (void) arg;
@@ -1357,7 +1378,7 @@ static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_LESS_OR_EQUAL] = {false, false, false, false, op_less_or_equal_compiler},
     [OP_GREATER] = {false, false, false, false, op_greater_compiler},
     [OP_GREATER_OR_EQUAL] = {false, false, false, false, op_greater_or_equal_compiler},
-    /* [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_compiler}, */
+    [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_compiler},
     [OP_POP_RES] = {false, false, false, false, op_pop_res_compiler},
     [OP_DONE] = {false, false, false, true, op_done_compiler},
     /* [OP_PRINT] = {false, false, false, false, op_print_compiler}, */
