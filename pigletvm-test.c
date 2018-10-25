@@ -606,7 +606,6 @@ int main(int argc, char *argv[])
         assert(vm_jit_get_result() == 2);
     }
 
-    return 0;
 
     {
         /* Jump if true, with condition positive */
@@ -634,6 +633,11 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 13);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 13);
+
     }
 
     {
@@ -662,6 +666,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 2);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 2);
     }
 
     {
@@ -690,6 +698,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 13);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 13);
     }
 
     {
@@ -718,6 +730,10 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 2);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 2);
     }
 
     return EXIT_SUCCESS;

@@ -1183,6 +1183,54 @@ static void op_mul_compiler(jit_function_t function, uint64_t arg)
     jit_insn_store_relative(function, stack_ptr_peek, 0, result);
 }
 
+static void op_jump_if_true_compiler(jit_function_t function, uint64_t arg)
+{
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Move the top of the stack */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+
+    /* Get the condition and jump to the end if not true */
+    jit_value_t condition_value = jit_insn_load_relative(function, stack_ptr_moved, 0, jit_type_ulong);
+    jit_label_t done_label = jit_label_undefined;
+    jit_insn_branch_if_not(function, condition_value, &done_label);
+
+    /* Change pc if true */
+    jit_value_t pc_ptr = jit_value_get_param(function, 1);
+    jit_value_t target_pc = jit_value_create_long_constant(function, jit_type_ulong, arg);
+    jit_insn_store_relative(function, pc_ptr, 0, target_pc);
+
+    jit_insn_label(function, &done_label);
+}
+
+static void op_jump_if_false_compiler(jit_function_t function, uint64_t arg)
+{
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Move the top of the stack */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+
+    /* Get the condition and jump to the end if not true */
+    jit_value_t condition_value = jit_insn_load_relative(function, stack_ptr_moved, 0, jit_type_ulong);
+    jit_label_t done_label = jit_label_undefined;
+    jit_insn_branch_if(function, condition_value, &done_label);
+
+    /* Change pc if true */
+    jit_value_t pc_ptr = jit_value_get_param(function, 1);
+    jit_value_t target_pc = jit_value_create_long_constant(function, jit_type_ulong, arg);
+    jit_insn_store_relative(function, pc_ptr, 0, target_pc);
+
+    jit_insn_label(function, &done_label);
+}
+
 static void op_equal_compiler(jit_function_t function, uint64_t arg)
 {
     (void) arg;
@@ -1368,6 +1416,13 @@ static void op_pop_res_compiler(jit_function_t function, uint64_t arg)
     jit_insn_store_relative(function, result_ptr, 0, result_value);
 }
 
+static void prejump_compiler(jit_function_t function, uint64_t arg)
+{
+    jit_value_t pc_ptr = jit_value_get_param(function, 1);
+    jit_value_t target_pc = jit_value_create_long_constant(function, jit_type_ulong, arg);
+    jit_insn_store_relative(function, pc_ptr, 0, target_pc);
+}
+
 typedef void jit_op_compiler(jit_function_t function, uint64_t arg);
 
 typedef struct jit_opinfo {
@@ -1394,8 +1449,8 @@ static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_DIV] = {false, false, false, false, op_div_compiler},
     [OP_MUL] = {false, false, false, false, op_mul_compiler},
     [OP_JUMP] = {true, false, true, false, NULL},
-    /* [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_compiler}, */
-    /* [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_compiler}, */
+    [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_compiler},
+    [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_compiler},
     [OP_EQUAL] = {false, false, false, false, op_equal_compiler},
     [OP_LESS] = {false, false, false, false, op_less_compiler},
     [OP_LESS_OR_EQUAL] = {false, false, false, false, op_less_or_equal_compiler},
@@ -1470,16 +1525,12 @@ static void trace_jit_compile(void)
         /* we just compile the finalizing handler, nothing special here */
         info->compiler(function, 0);
     } else if (info->is_branch) {
-        /* TODO: jump handler */
+        /* we need to change pc in case the branch is not taken, thus a prejump handler */
+        prejump_compiler(function, pc_to_compile + 3);
 
-        /* add a tail to skip the jump instruction - if the branch is not taken */
-        /* trace_tail->handler = trace_prejump_handler; */
-        /* trace_tail->arg = pc_to_compile + 3; */
-
-        /* now, the jump handler itself */
-        /* trace_tail++; */
-        /* trace_tail->handler = info->handler; */
-        /* trace_tail->arg = ARG_AT_PC(bytecode, pc_to_compile); */
+        /* Now the branching instruction itself */
+        info = &jit_opcode_to_opinfo[bytecode[pc_to_compile]];
+        info->compiler(function, ARG_AT_PC(bytecode, pc_to_compile));
     } else {
         /* This is impossible, we only end traces on last instructions or branches */
         assert(false);
