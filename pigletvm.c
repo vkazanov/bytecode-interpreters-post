@@ -1062,6 +1062,30 @@ static void op_div_compiler(jit_function_t function, uint64_t arg)
     jit_insn_store_relative(function, stack_ptr_peek, 0, result);
 }
 
+static void op_mul_compiler(jit_function_t function, uint64_t arg)
+{
+    (void) arg;
+
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Move the top of the stack */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+
+    /* Get the right-hand value */
+    jit_value_t rvalue = jit_insn_load_relative(function, stack_ptr_moved, 0, jit_type_ulong);
+
+    /* We only need to peek the top of the stak */
+    jit_value_t stack_ptr_peek = jit_insn_add_relative(function, stack_ptr_moved, -stack_ptrdiff);
+    jit_value_t lvalue = jit_insn_load_relative(function, stack_ptr_peek, 0, jit_type_ulong);
+
+    /* Multiply values */
+    jit_value_t result = jit_insn_mul(function, lvalue, rvalue);
+    jit_insn_store_relative(function, stack_ptr_peek, 0, result);
+}
 
 static void op_pop_res_compiler(jit_function_t function, uint64_t arg)
 {
@@ -1106,7 +1130,7 @@ static const jit_opinfo jit_opcode_to_opinfo[] = {
     /* [OP_ADDI] = {true, false, false, false, op_addi_compiler}, */
     [OP_SUB] = {false, false, false, false, op_sub_compiler},
     [OP_DIV] = {false, false, false, false, op_div_compiler},
-    /* [OP_MUL] = {false, false, false, false, op_mul_compiler}, */
+    [OP_MUL] = {false, false, false, false, op_mul_compiler},
     /* [OP_JUMP] = {true, false, true, false, op_jump_compiler}, */
     /* [OP_JUMP_IF_TRUE] = {true, true, false, false, op_jump_if_true_compiler}, */
     /* [OP_JUMP_IF_FALSE] = {true, true, false, false, op_jump_if_false_compiler}, */
