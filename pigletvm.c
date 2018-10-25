@@ -974,6 +974,54 @@ static void op_storei_compiler(jit_function_t function, uint64_t arg)
     jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
 }
 
+static void op_load_compiler(jit_function_t function, uint64_t arg)
+{
+    (void) arg;
+
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Get the top of the stack as an address */
+    jit_value_t stack_ptr_peek = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_value_t addr_value = jit_insn_load_relative(function, stack_ptr_peek, 0, jit_type_ulong);
+
+    /* Get the value from the address */
+    jit_value_t memory_ptr = jit_value_create_nint_constant(
+        function, jit_memory_ptr_type, (long)&vm_jit.memory
+    );
+    jit_value_t val_value = jit_insn_load_elem(function, memory_ptr, addr_value, jit_type_ulong);
+
+    /* Replace the value on the top of the stack with the value from memory */
+    jit_insn_store_relative(function, stack_ptr_peek, 0, val_value);
+}
+
+static void op_store_compiler(jit_function_t function, uint64_t arg)
+{
+    (void) arg;
+
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Get the top of the stack as a value */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_value_t val_value = jit_insn_load_relative(function, stack_ptr_moved, 0, jit_type_ulong);
+
+    /* Get address from the stack  */
+    stack_ptr_moved = jit_insn_add_relative(function, stack_ptr_moved, -stack_ptrdiff);
+    jit_value_t addr_value = jit_insn_load_relative(function, stack_ptr_moved, 0, jit_type_ulong);
+
+    /* Move the top of the stack pointer */
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+
+    /* Store the value in the given address */
+    jit_value_t memory_ptr = jit_value_create_nint_constant(
+        function, jit_memory_ptr_type, (long)&vm_jit.memory
+    );
+    jit_insn_store_elem(function, memory_ptr, addr_value, val_value);
+}
+
 static void op_dup_compiler(jit_function_t function, uint64_t arg)
 {
     (void) arg;
@@ -1165,8 +1213,8 @@ static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_LOADI] = {true, false, false, false, op_loadi_compiler},
     [OP_LOADADDI] = {true, false, false, false, op_loadaddi_compiler},
     [OP_STOREI] = {true, false, false, false, op_storei_compiler},
-    /* [OP_LOAD] = {false, false, false, false, op_load_compiler}, */
-    /* [OP_STORE] = {false, false, false, false, op_store_compiler}, */
+    [OP_LOAD] = {false, false, false, false, op_load_compiler},
+    [OP_STORE] = {false, false, false, false, op_store_compiler},
     [OP_DUP] = {false, false, false, false, op_dup_compiler},
     [OP_DISCARD] = {false, false, false, false, op_discard_compiler},
     [OP_ADD] = {false, false, false, false, op_add_compiler},

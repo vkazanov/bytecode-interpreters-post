@@ -283,10 +283,8 @@ int main(int argc, char *argv[])
         assert(vm_jit_get_result() == 20);
     }
 
-    return 0;
-
     {
-        /* Store a value into memory, load it, the pop */
+        /* Store a value into memory, load it, then pop */
         uint8_t code[] = {
             OP_PUSHI, ENCODE_ARG(10), /* address */
             OP_DUP,                    /* address for loading */
@@ -307,7 +305,13 @@ int main(int argc, char *argv[])
         vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 112);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 112);
     }
+
+    return 0;
 
     {
         /* Division with error */
