@@ -135,9 +135,9 @@
 
   - [X] add separate stack handling routines
 
-  - [ ] extract common stack op compiling into separate compiling helpers
+  - [X] extract common stack op compiling into separate compiling helpers
 
-  - [ ] add everything but the branching instructions
+  - [X] add everything but the branching instructions
 
   - [ ] finish the branching instruction
 

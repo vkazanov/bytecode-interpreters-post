@@ -864,16 +864,19 @@ static interpret_result error_re = ERROR_RUNTIME_EXCEPTION;
 
 /* Arg types */
 static jit_type_t jit_memory_ptr_type;
+static jit_type_t jit_type_cstring;
 static jit_type_t jit_stack_ptr_type;
 static jit_type_t jit_stack_ptr_ptr_type;
 static jit_type_t jit_pc_ptr_type;
 static jit_type_t jit_is_running_ptr_type;
 static jit_type_t jit_result_ptr_type;
 
-/* Errors to be throw from functions return a pointer to a value */
 
-/* The main jitted function type */
+/* The main jitted function signature */
 static jit_type_t jit_function_signature;
+
+/* Stdlib helper signature */
+static jit_type_t jit_printf_signature;
 
 static void op_abort_compiler(jit_function_t function, uint64_t arg)
 {
@@ -1308,7 +1311,6 @@ static void op_greater_or_equal_compiler(jit_function_t function, uint64_t arg)
 static void op_greater_or_equali_compiler(jit_function_t function, uint64_t arg)
 {
     const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
-
     jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
     jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
 
@@ -1324,6 +1326,27 @@ static void op_greater_or_equali_compiler(jit_function_t function, uint64_t arg)
     /* greater than */
     jit_value_t result = jit_insn_ge(function, lvalue, rvalue);
     jit_insn_store_relative(function, stack_ptr_peek, 0, result);
+}
+
+static void op_print_compiler(jit_function_t function, uint64_t arg)
+{
+    (void) arg;
+
+    const long stack_ptrdiff = (long)jit_type_get_size(jit_type_ulong);
+    jit_value_t stack_ptr_ptr = jit_value_get_param(function, 0);
+    jit_value_t stack_ptr = jit_insn_load_relative(function, stack_ptr_ptr, 0, jit_stack_ptr_type);
+
+    /* Move the top of the stack value */
+    jit_value_t stack_ptr_moved = jit_insn_add_relative(function, stack_ptr, -stack_ptrdiff);
+    jit_insn_store_relative(function, stack_ptr_ptr, 0, stack_ptr_moved);
+
+    /* Get the value to be printed */
+    jit_value_t val_value = jit_insn_load_relative(function, stack_ptr_moved, 0, jit_type_ulong);
+
+    /* Call printf */
+    jit_value_t format_str_ptr = jit_value_create_long_constant(function, jit_type_cstring, (long)"%zu\n");
+    jit_value_t args[] = {format_str_ptr, val_value};
+    jit_insn_call_native(function, "printf", printf, jit_printf_signature, args, 2, JIT_CALL_NOTHROW);
 }
 
 static void op_pop_res_compiler(jit_function_t function, uint64_t arg)
@@ -1381,7 +1404,7 @@ static const jit_opinfo jit_opcode_to_opinfo[] = {
     [OP_GREATER_OR_EQUALI] = {true, false, false, false, op_greater_or_equali_compiler},
     [OP_POP_RES] = {false, false, false, false, op_pop_res_compiler},
     [OP_DONE] = {false, false, false, true, op_done_compiler},
-    /* [OP_PRINT] = {false, false, false, false, op_print_compiler}, */
+    [OP_PRINT] = {false, false, false, false, op_print_compiler},
 };
 
 static void trace_jit_runner(void)
@@ -1502,10 +1525,20 @@ static void vm_jit_reset(uint8_t *bytecode)
     jit_is_running_ptr_type = jit_type_create_pointer(jit_type_sys_bool, 1);
     jit_result_ptr_type = jit_type_create_pointer(jit_type_ulong, 1);
 
-    jit_type_t params[] = {jit_stack_ptr_ptr_type, jit_pc_ptr_type, jit_is_running_ptr_type, jit_result_ptr_type};
-    jit_function_signature = jit_type_create_signature(
-        jit_abi_cdecl, jit_type_void, params, sizeof(params) / sizeof(params[0]), 1
-    );
+    {
+        jit_type_t params[] = {jit_stack_ptr_ptr_type, jit_pc_ptr_type, jit_is_running_ptr_type, jit_result_ptr_type};
+        jit_function_signature = jit_type_create_signature(
+            jit_abi_cdecl, jit_type_void, params, sizeof(params) / sizeof(params[0]), 1
+        );
+    }
+
+    {
+        jit_type_cstring = jit_type_create_pointer(jit_type_sys_char, 1);
+        jit_type_t params[] = {jit_type_cstring, jit_type_ulong};
+        jit_printf_signature = jit_type_create_signature(
+            jit_abi_cdecl, jit_type_int, params, sizeof(params) / sizeof(params[0]), 1
+        );
+    }
 
     /* set the builtin exception handler */
     jit_exception_set_handler(vm_jit_builtin_exception_handler);
