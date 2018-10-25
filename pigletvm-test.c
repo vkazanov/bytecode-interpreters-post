@@ -311,22 +311,6 @@ int main(int argc, char *argv[])
         assert(vm_jit_get_result() == 112);
     }
 
-    return 0;
-
-    {
-        /* Division with error */
-        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(0), OP_DIV, OP_POP_RES, OP_DONE };
-
-        interpret_result result = vm_interpret(code);
-        assert(result == ERROR_DIVISION_BY_ZERO);
-
-        result = vm_interpret_threaded(code);
-        assert(result == ERROR_DIVISION_BY_ZERO);
-
-        result = vm_interpret_trace(code);
-        assert(result == ERROR_DIVISION_BY_ZERO);
-    }
-
     {
         /* Expression: 2*(11+3) */
         uint8_t code[] = {
@@ -349,7 +333,30 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 28);
+
+        result = vm_interpret_jit(code);
+        assert(result == SUCCESS);
+        assert(vm_jit_get_result() == 28);
     }
+
+    {
+        /* Division with error */
+        uint8_t code[] = { OP_PUSHI, ENCODE_ARG(10), OP_PUSHI, ENCODE_ARG(0), OP_DIV, OP_POP_RES, OP_DONE };
+
+        interpret_result result = vm_interpret(code);
+        assert(result == ERROR_DIVISION_BY_ZERO);
+
+        result = vm_interpret_threaded(code);
+        assert(result == ERROR_DIVISION_BY_ZERO);
+
+        result = vm_interpret_trace(code);
+        assert(result == ERROR_DIVISION_BY_ZERO);
+
+        result = vm_interpret_jit(code);
+        assert(result == ERROR_DIVISION_BY_ZERO);
+    }
+
+    return 0;
 
     {
         /* Absolute jump */

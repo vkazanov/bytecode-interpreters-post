@@ -5,6 +5,7 @@
 typedef enum interpret_result {
     SUCCESS,
     ERROR_DIVISION_BY_ZERO,
+    ERROR_RUNTIME_EXCEPTION,
     ERROR_UNKNOWN_OPCODE,
     ERROR_END_OF_STREAM,
 } interpret_result;

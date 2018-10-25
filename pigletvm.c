@@ -859,6 +859,8 @@ static struct {
 
 /* Need addressable err values */
 static interpret_result error_eos = ERROR_END_OF_STREAM;
+static interpret_result error_dbz = ERROR_DIVISION_BY_ZERO;
+static interpret_result error_re = ERROR_RUNTIME_EXCEPTION;
 
 /* Arg types */
 static jit_type_t jit_memory_ptr_type;
@@ -1327,6 +1329,14 @@ static void trace_jit_compile(void)
     vm_jit.trace_cache[vm_jit.pc].handler();
 }
 
+static void *vm_jit_builtin_exception_handler(int exception_type)
+{
+    if (exception_type == JIT_RESULT_DIVISION_BY_ZERO)
+        return &error_dbz;
+    else
+        return &error_re;
+}
+
 static void vm_jit_reset(uint8_t *bytecode)
 {
     vm_jit = (typeof(vm_jit)) {
@@ -1350,6 +1360,9 @@ static void vm_jit_reset(uint8_t *bytecode)
     jit_function_signature = jit_type_create_signature(
         jit_abi_cdecl, jit_type_void, params, sizeof(params) / sizeof(params[0]), 1
     );
+
+    /* set the builtin exception handler */
+    jit_exception_set_handler(vm_jit_builtin_exception_handler);
 }
 
 interpret_result vm_interpret_jit(uint8_t *bytecode)
