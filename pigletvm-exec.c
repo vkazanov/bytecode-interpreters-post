@@ -108,6 +108,7 @@ static opinfo *opname_to_opcode_info(const char *opname, uint8_t *op)
 
 static size_t print_instruction(uint8_t *bytecode, size_t offset)
 {
+    printf("%zu ", offset);
     uint8_t op = bytecode[offset++];
     char *op_name = opcode_to_disinfo[op].name;
     bool has_arg = opcode_to_disinfo[op].has_arg;
