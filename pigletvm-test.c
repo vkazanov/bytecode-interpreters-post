@@ -27,10 +27,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 0);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 0);
     }
 
     {
@@ -48,10 +44,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == ERROR_END_OF_STREAM);
         assert(vm_trace_get_result() == 0);
-
-        result = vm_interpret_jit(code);
-        assert(result == ERROR_END_OF_STREAM);
-        assert(vm_jit_get_result() == 0);
     }
 
     {
@@ -69,10 +61,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 5);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 5);
     }
 
     {
@@ -96,10 +84,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 10);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 10);
     }
 
     {
@@ -122,10 +106,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 5);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 5);
     }
 
     {
@@ -142,10 +122,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 15);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 15);
     }
 
     {
@@ -162,10 +138,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 15);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 15);
     }
 
     {
@@ -188,10 +160,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 111);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 111);
     }
 
     {
@@ -215,10 +183,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 114);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 114);
     }
 
     {
@@ -235,10 +199,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 4);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 4);
     }
 
     {
@@ -255,10 +215,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 2);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 2);
     }
 
     {
@@ -277,10 +233,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 20);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 20);
     }
 
     {
@@ -305,10 +257,6 @@ int main(int argc, char *argv[])
         vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 112);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 112);
     }
 
     {
@@ -333,10 +281,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 28);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 28);
     }
 
     {
@@ -350,9 +294,6 @@ int main(int argc, char *argv[])
         assert(result == ERROR_DIVISION_BY_ZERO);
 
         result = vm_interpret_trace(code);
-        assert(result == ERROR_DIVISION_BY_ZERO);
-
-        result = vm_interpret_jit(code);
         assert(result == ERROR_DIVISION_BY_ZERO);
     }
 
@@ -384,10 +325,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 4);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 4);
     }
 
     {
@@ -411,10 +348,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 1);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 1);
     }
 
     {
@@ -438,10 +371,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 0);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 0);
     }
 
 
@@ -466,10 +395,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 1);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 1);
     }
 
     {
@@ -493,10 +418,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 1);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 1);
     }
 
     {
@@ -520,10 +441,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 1);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 1);
     }
 
     {
@@ -547,10 +464,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 1);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 1);
     }
 
     {
@@ -573,10 +486,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 1);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 1);
     }
 
     {
@@ -600,10 +509,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 2);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 2);
     }
 
 
@@ -633,11 +538,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 13);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 13);
-
     }
 
     {
@@ -666,10 +566,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 2);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 2);
     }
 
     {
@@ -698,10 +594,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 13);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 13);
     }
 
     {
@@ -730,10 +622,6 @@ int main(int argc, char *argv[])
         result = vm_interpret_trace(code);
         assert(result == SUCCESS);
         assert(vm_trace_get_result() == 2);
-
-        result = vm_interpret_jit(code);
-        assert(result == SUCCESS);
-        assert(vm_jit_get_result() == 2);
     }
 
     return EXIT_SUCCESS;
