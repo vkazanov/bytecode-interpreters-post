@@ -1,0 +1,107 @@
+# find all prime numbers less than 65536
+
+# start with target val i=2
+PUSHI 2
+DUP
+STOREI 0
+
+# routine: mark non-primes loop (do {..} while n < 65536)
+mark:
+
+# stack: addr=n
+LOADI 0
+# stack: addr=n|addr=i
+ADD
+# stack: addr=n+i
+
+markloop:
+# stack: addr=n
+DUP
+# stack: addr=n|addr=n
+PUSHI 1
+# stack: addr=n|addr=n|1
+STORE
+# stack: addr=n
+LOADI 0
+# stack: addr=n|addr=i
+ADD
+# stack: addr=n+i
+DUP
+# stack: addr=n+i|addr=n+i
+PUSHI 65535
+# stack: addr=n+i|addr=n+i|65535
+GREATER_OR_EQUAL
+# stack: addr=n+i|1 or 0
+JUMP_IF_FALSE markloop
+# stack: addr=n+i
+DISCARD
+# stack:
+
+# routine: find the next possible prime number while ignoring marked ones
+incrementandcheck:
+
+LOADI 0
+# stack: addr=i
+PUSHI 1
+# stack: addr=i|1
+ADD
+# stack: addr=i+1
+DUP
+# stack: addr=i+1|addr=i+1
+STOREI 0
+# stack: addr=i+1
+DUP
+# stack: addr=i+1|addr=i+1
+PUSHI 65535
+# stack: addr=i+1|addr=i+1|65535
+GREATER_OR_EQUAL
+# stack: addr=i+1|1 or 0
+JUMP_IF_TRUE print
+# stack: addr=i+1
+LOAD
+# stack: 1 or 0
+JUMP_IF_TRUE incrementandcheck
+# stack:
+LOADI 0
+# stack: addr=i+1
+JUMP mark
+
+# routine: print prime numbers
+print:
+
+# stack: addr=i+1
+DISCARD
+# stack:
+PUSHI 0
+# stack:0
+
+printloop:
+# stack: addr=i
+PUSHI 1
+# stack: addr=i|1
+ADD
+# stack: addr=i+1
+DUP
+# stack: addr=i+1|addr=i+1
+PUSHI 65535
+# stack: addr=i+1|addr=i+1|65535
+GREATER_OR_EQUAL
+# stack: addr=i+1|1 or 0
+JUMP_IF_TRUE done
+# stack: addr=i+1
+DUP
+# stack: addr=i+1|addr=i+1
+LOAD
+# stack: addr=i+1|1 or 0
+JUMP_IF_TRUE printloop
+# stack: addr=i+1
+DUP
+# stack: addr=i+1|addr=i+1
+PRINT
+# stack: addr=i+1
+JUMP printloop
+
+done:
+DISCARD
+
+DONE
