@@ -32,6 +32,7 @@
  * */
 
 static struct {
+    /* Current instruction pointer */
     uint8_t *ip;
 
     /* Fixed-size stack */
