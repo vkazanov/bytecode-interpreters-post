@@ -1,0 +1,167 @@
+* DONE развитая стековая машина
+
+  - [X] чтение байт-кода из файла
+
+  - [X] специальный нулевой байт-код
+
+  - [X] ассемлер, дизассемблер
+
+  - [X] система тестов
+
+  - [X] 16 bit args in the machine
+
+  - [X] 16 bit args in assembler/disassembler
+
+  - [X] печать значений со стека
+
+  - [X] JUMP
+
+  - [X] EQUAL/LESS/LESS_OR_EQUAL/GREATER/GREATER_OR_EQUAL/
+
+  - [X] asm/disasm update
+
+  - [X] JUMP_IF_TRUE/JUMP_IF_FALSE
+
+  - [X] метки в ассемблере (создание и использование в JUMP-ах)
+
+  - [X] DUP
+
+  - [X] массив памяти, загрузка на стек и обратно
+
+  - [X] поддержка памяти в асм
+
+  - [X] обновить Makefile
+
+* DONE решето Эратосфена в ассемблере для ПятачокВМ
+
+  sieve.pvm
+
+* DONE простые оптимизации
+
+  - [X] замерить скорость без оптимизаций
+
+    default optimisation:
+
+    x100 - 1.5 с
+
+    -O3:
+
+    x100 - 0.6 с
+
+  - [X] сравнить с питоном
+
+    x100 - 4.5 с
+
+  - [X] оставить тэг для неоптимизированного кода
+
+  - [X] отпрофилировать все толком
+
+    17/13% на функции работы со стеком, по умолчанию не инлайнились
+
+  - [X] макросы для работы со стеком
+
+    1.5 -> 1.25s
+
+    теперь почти весь код работает через switch, который и занимает порядка 30% времени
+
+  - [X] работа со стеком без замены значения
+
+    1.25 -> 1.15s
+
+  - [X] специальные байт-коды и нединамические суперинструкции
+
+    PUSHI/LOADI
+
+    1.15 -> 0.95s
+
+    -O3:
+
+    x100 - 0.45s
+
+  - [X] range check
+
+    -O3:  x100 - 0.41s
+
+* DONE шитый код
+
+  - [X] token threaded code
+
+    0.95 -> 0.8
+
+    -O3: 0.5s
+
+* DONE кэш трасс
+
+  - [X] non-jumping trace
+
+  non-optimized: 1.2s
+
+  -O3: 0.38s
+
+  avg trace size: 4.42 (+1,2)
+
+  - [X] jumping trace
+
+  avg trace size: 5.1
+
+  non-optimized:
+
+  -O3: 0.36
+* DONE libjit
+
+  - [X] compile libjit
+
+  - [X] come up with a simple example function
+
+  - [X] pigletvm libjit plan
+
+  - [X] imitate an instruction pointer increment/decrement
+
+  - [X] imitate a stack push/pop/peek
+
+  - [X] imitate a setjump/longjump
+
+    should be done as a part of the standard exception handling logic
+
+  - [X] plan the integration of jit
+
+  - [X] get the scaffolding in place
+
+  - [X] run with DONE/ABORT only
+
+  - [X] add the tail handling compiler
+
+  - [X] add separate stack handling routines
+
+  - [X] extract common stack op compiling into separate compiling helpers
+
+  - [X] add everything but the branching instructions
+
+  - [X] measure the code
+
+    10 times slower, failer
+* DONE зачистить репоз от мусора, оставшегося от первых версий
+* DONE подготовить код к презентации идей
+* DONE список вещей, которые надо упомянуть
+
+  - акцент статьи на низкоуровневых нинтерпретаторах байт-кода и причины такого интереса
+
+  - макросы для работы со стеком
+
+  - статические суперинструкции
+
+  - теоретическая возможность использования динамические суперинструкций
+
+  - борьба с проверкой в свитче
+
+  - простой "шитый код"
+
+  - трейсы
+
+  - оптимизация работы со стеком - фиксированная глубина стека на каждой инструкции
+
+  - что-то еще было?
+
+* TODO ссылки в статье
+* TODO обновить комментарии на Гитхабе
+* TODO вычитка
