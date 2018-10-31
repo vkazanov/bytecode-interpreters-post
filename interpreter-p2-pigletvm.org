@@ -127,43 +127,45 @@ nterpret_result vm_interpret(uint8_t *bytecode)
 
   Программа, считающая сумму чисел от 1 до 65536, на этом ассемблере выглядит примерно так:
 
-  #+BEGIN_SRC
- sum numbers from 1 to 65535
+  #+BEGIN_EXAMPLE
+# sum numbers from 1 to 65535
 
- init the current sum and the index
-USHI 1
-USHI 1
- stack s=1, i=1
-TOREI 0
- stack: s=1
+# init the current sum and the index
+PUSHI 1
+PUSHI 1
+# stack s=1, i=1
+STOREI 0
+# stack: s=1
 
- routine: increment the counter, add it to the current sum
-ncrementandadd:
+# routine: increment the counter, add it to the current sum
+incrementandadd:
 
- check if index is too big
-OADI 0
- stack: s, i
-DDI 1
- stack: s, i+1
-UP
- stack: s, i+1, i+1
-REATER_OR_EQUALI 65535
- stack: s, i+1, 1 or 0
-UMP_IF_TRUE done
- stack: s, i+1
-UP
- stack: s, i+1, i+1
-TOREI 0
- stack: s, i+1
-DD
- stack: s+i+1
-UMP incrementandadd
+# check if index is too big
+LOADI 0
+# stack: s, i
+ADDI 1
+# stack: s, i+1
+DUP
+# stack: s, i+1, i+1
+GREATER_OR_EQUALI 65535
+# stack: s, i+1, 1 or 0
+JUMP_IF_TRUE done
+# stack: s, i+1
+DUP
+# stack: s, i+1, i+1
+STOREI 0
+# stack: s, i+1
+ADD
+# stack: s+i+1
+JUMP incrementandadd
 
-one:
-ISCARD
-RINT
-ONE
-   #+END_SRC
+done:
+DISCARD
+PRINT
+DONE
+  #+END_EXAMPLE
+
+
 
   Не Python, конечно, но все необходимое для поросячьего счастья тут есть: комментарии, метки,
   условные и безусловные переходы по меткам, мнемоники для инструкций и возможность указывать
@@ -253,10 +255,10 @@ ONE
 
   Ничего сложного. Давайте посмотрим, что из этого получилось:
 
-  #+BEGIN_SRC shell
+  #+BEGIN_EXAMPLE shell
   > ./pigletvm runtimes test/sieve.bin 100 > /dev/null
   PROFILE: switch code finished took 410ms
-  #+END_SRC
+  #+END_EXAMPLE
 
   Ого! Кода всего-то на три новых инструкции, а выиграли мы полторы сотни миллисекунд!
 
@@ -409,7 +411,7 @@ ONE
   конечно, ленивое решение, практически же для экономии памяти имеет смысл использовать
   хэш-таблицу.
 
-  В начале работы интерпретатора первый handler каждой из трасс будет сам себя компилировать:
+  В начале работы интерпретатора первый обработчик каждой из трасс будет сам себя компилировать:
 
   #+BEGIN_SRC cpp
    for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
@@ -426,7 +428,7 @@ ONE
   #+END_SRC
 
   Компилирующий обработчик чуть сложнее, и, помимо сборки трассы, начинающейся от текущей
-  инструкции, он
+  инструкции, он делает следующее:
 
   #+BEGIN_SRC cpp
     static void trace_compile_handler(scode *trace_head)
@@ -444,7 +446,7 @@ ONE
 
   #+END_SRC
 
-  А каждый обработчик инструкции выглядит следующим образом:
+  Нормальные обработчики инструкции выглядят следующим образом:
 
   #+BEGIN_SRC cpp
   static void op_add_handler(scode *code)
@@ -478,12 +480,12 @@ ONE
   Все это чуть сложнее, чем простое добавление суперинструкций, но давайте посмотрим, дало ли это
   нам что-нибудь:
 
-  #+BEGIN_SRC shell
+  #+BEGIN_EXAMPLE
   > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
   PROFILE: switch code finished took 427ms
   PROFILE: switch code (no range check) finished took 395ms
   PROFILE: trace code finished took 367ms
-  #+END_SRC
+  #+END_EXAMPLE
 
   Ура, еще тридцать миллисекунд!
 
@@ -501,7 +503,115 @@ ONE
   3. Сами цепочки функции компилятор превращает в единственный вызов первой функции-обработчика,
      что возможно благодаря оптимизации хвостового вызова.
 
-  Думаю, можно подводить итоги свинских тренировок.
+  Прежде чем подвести итоги наших тренировок мы с Поросенком решили попробовать еще одну древнюю
+  технику интерпретации программ - "шитый" код.
+
+* DONE Упражнение четвертое: "шитый" код
+
+  Любая интересующаяся историей интерпретаторов свинья слышала про "шитый" код. Вариантов этого
+  приема множества, но все они сводятся к тому, чтобы вместо массива опкодов идти по массиву,
+  например, указателей на функции или меток, переходя по ним непосредственно, без промежуточного
+  опкода.
+
+  Вызовы функций - дело дорогое и смысла в наши дни не имеет; большая часть других версий "шитого"
+  кода трудно нереализуема в рамках стандартного Си. Даже техника, о которой речь пойдет ниже,
+  используется широко распространенное, но все же нестандартное расширение Си - указатели на метки.
+
+  В версии "шитого" кода (англ. token threaded code), которую я выбрал для свинских целей, мы
+  сохраняем байт-код, но перед началом интерпретации создаем таблицу, отображающую опкоды инструкций
+  на адреса меток обработчиков инструкций:
+
+  #+BEGIN_SRC cpp
+    const void *labels[] = {
+        [OP_PUSHI] = &&op_pushi,
+        [OP_LOADI] = &&op_loadi,
+        [OP_LOADADDI] = &&op_loadaddi,
+        [OP_STORE] = &&op_store,
+        [OP_STOREI] = &&op_storei,
+        [OP_LOAD] = &&op_load,
+        [OP_DUP] = &&op_dup,
+        [OP_DISCARD] = &&op_discard,
+        [OP_ADD] = &&op_add,
+        [OP_ADDI] = &&op_addi,
+        [OP_SUB] = &&op_sub,
+        [OP_DIV] = &&op_div,
+        [OP_MUL] = &&op_mul,
+        [OP_JUMP] = &&op_jump,
+        [OP_JUMP_IF_TRUE] = &&op_jump_if_true,
+        [OP_JUMP_IF_FALSE] = &&op_jump_if_false,
+        [OP_EQUAL] = &&op_equal,
+        [OP_LESS] = &&op_less,
+        [OP_LESS_OR_EQUAL] = &&op_less_or_equal,
+        [OP_GREATER] = &&op_greater,
+        [OP_GREATER_OR_EQUAL] = &&op_greater_or_equal,
+        [OP_GREATER_OR_EQUALI] = &&op_greater_or_equali,
+        [OP_POP_RES] = &&op_pop_res,
+        [OP_DONE] = &&op_done,
+        [OP_PRINT] = &&op_print,
+        [OP_ABORT] = &&op_abort,
+    };
+  #+END_SRC
+
+  Обратите внимание на символы "&&" - это указатели на метки с телом инструкций, то самое
+  нестандартное расширение GCC.
+
+  Для начала выполнения кода достаточно прыгнуть по указателю на метку, соответствущую первому
+  опкоду программы:
+
+  #+BEGIN_SRC cpp
+      goto *labels[NEXT_OP()];
+  #+END_SRC
+
+  Никакого цикла здесь нет и не нужно, каждая из инструкций сама сделает прыжок к следующему
+  обработчику:
+
+  #+BEGIN_SRC cpp
+op_pushi: {
+        /* get the argument, push it onto stack */
+        uint16_t arg = NEXT_ARG();
+        PUSH(arg);
+        /* jump to the next instruction*/
+        goto *labels[NEXT_OP()];
+    }
+  #+END_SRC
+
+  Отсутствие switch "размазывает" места принятия решений о следующей инструкции по телам инструкций,
+  что в теории должно помочь предсказателю ветвлений для внеочередного выполнения инструкций. Мы как
+  бы встроили switch прямо в сами инструкции и явно сформировали таблицу переходов.
+
+  Вот и вся техника, Поросенку она очень понравилась. Давайте посмотрим, что получается на практике:
+
+  #+BEGIN_EXAMPLE
+    > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
+    PROFILE: switch code finished took 443ms
+    PROFILE: switch code (no range check) finished took 389ms
+    PROFILE: threaded code finished took 477ms
+    PROFILE: trace code finished took 364ms
+  #+END_EXAMPLE
+
+  Упс. Это самая медленная из всех наших техник! Что же случилось? Давайте попробуем те же тесты,
+  выключив все оптимизации GCC:
+
+  #+BEGIN_EXAMPLE
+    > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
+    PROFILE: switch code finished took 969ms
+    PROFILE: switch code (no range check) finished took 940ms
+    PROFILE: threaded code finished took 824ms
+    PROFILE: trace code finished took 1169ms
+  #+END_EXAMPLE
+
+  Здесь "шитый" код показывает себя лучше.
+
+  Тут играют роль два фактора:
+
+  1. Оптимизирующий компилятор сам построит таблицу переходов не хуже нашей ручной табички с метками.
+
+  2. Примерно в районе поколения Haswell процессоров Intel предсказатели ветвлений научились
+     предсказывать переходы через единственную точку ветвлений.
+
+  По старой памяти эту технику еще сохраняют в коде, например, Питона, но в наши дни это архаизм.
+
+  Давайте, наконец, подведем итоги и оценим успехи, которых добилась наша свинья.
 
 * TODO Резюме
 
