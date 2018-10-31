@@ -32,20 +32,20 @@
   Все состояние в ПоросенокВМ хранится в единственной структуре:
 
   #+BEGIN_SRC cpp
-tatic struct {
-   /* Current instruction pointer */
-   uint8_t *ip;
+  static struct {
+      /* Current instruction pointer */
+      uint8_t *ip;
 
-   /* Fixed-size stack */
-   uint64_t stack[STACK_MAX];
-   uint64_t *stack_top;
+      /* Fixed-size stack */
+      uint64_t stack[STACK_MAX];
+      uint64_t *stack_top;
 
-   /* Operational memory */
-   uint64_t memory[MEMORY_SIZE];
+      /* Operational memory */
+      uint64_t memory[MEMORY_SIZE];
 
-   /* A single register containing the result */
-   uint64_t result;
- vm;
+      /* A single register containing the result */
+      uint64_t result;
+  } vm;
 
   #+END_SRC
 
@@ -53,43 +53,42 @@ tatic struct {
   накладные расходы в которых приходятся на обслуживание основного цикла работы программы:
 
   #+BEGIN_SRC cpp
-nterpret_result vm_interpret(uint8_t *bytecode)
+  interpret_result vm_interpret(uint8_t *bytecode)
+  {
+      vm_reset(bytecode);
 
-   vm_reset(bytecode);
+      for (;;) {
+          uint8_t instruction = NEXT_OP();
+          switch (instruction) {
+          case OP_PUSHI: {
+              /* get the argument, push it onto stack */
+              uint16_t arg = NEXT_ARG();
+              PUSH(arg);
+              break;
+          }
+          case OP_ADD: {
+              /* Pop 2 values, add 'em, push the result back to the stack */
+              uint64_t arg_right = POP();
+              *TOS_PTR() += arg_right;
+              break;
+          }
 
-   for (;;) {
-       uint8_t instruction = NEXT_OP();
-       switch (instruction) {
-       case OP_PUSHI: {
-           /* get the argument, push it onto stack */
-           uint16_t arg = NEXT_ARG();
-           PUSH(arg);
-           break;
-       }
-       case OP_ADD: {
-           /* Pop 2 values, add 'em, push the result back to the stack */
-           uint64_t arg_right = POP();
-           *TOS_PTR() += arg_right;
-           break;
-       }
+          /*
+          * ...
+          * Lots of other instruction handlers here
+          * ...
+          */
 
-       /*
-       * ...
-       * Lots of other instruction handlers here
-       * ...
-       */
+          case OP_DONE: {
+              return SUCCESS;
+          }
+          default:
+              return ERROR_UNKNOWN_OPCODE;
+          }
+      }
 
-       case OP_DONE: {
-           return SUCCESS;
-       }
-       default:
-           return ERROR_UNKNOWN_OPCODE;
-       }
+      return ERROR_END_OF_STREAM;
    }
-
-   return ERROR_END_OF_STREAM;
-
-
    #+END_SRC
 
   Из кода видно, что на каждый опкод Поросенок должен:
@@ -128,41 +127,41 @@ nterpret_result vm_interpret(uint8_t *bytecode)
   Программа, считающая сумму чисел от 1 до 65536, на этом ассемблере выглядит примерно так:
 
   #+BEGIN_EXAMPLE
-# sum numbers from 1 to 65535
+  # sum numbers from 1 to 65535
 
-# init the current sum and the index
-PUSHI 1
-PUSHI 1
-# stack s=1, i=1
-STOREI 0
-# stack: s=1
+  # init the current sum and the index
+  PUSHI 1
+  PUSHI 1
+  # stack s=1, i=1
+  STOREI 0
+  # stack: s=1
 
-# routine: increment the counter, add it to the current sum
-incrementandadd:
+  # routine: increment the counter, add it to the current sum
+  incrementandadd:
 
-# check if index is too big
-LOADI 0
-# stack: s, i
-ADDI 1
-# stack: s, i+1
-DUP
-# stack: s, i+1, i+1
-GREATER_OR_EQUALI 65535
-# stack: s, i+1, 1 or 0
-JUMP_IF_TRUE done
-# stack: s, i+1
-DUP
-# stack: s, i+1, i+1
-STOREI 0
-# stack: s, i+1
-ADD
-# stack: s+i+1
-JUMP incrementandadd
+  # check if index is too big
+  LOADI 0
+  # stack: s, i
+  ADDI 1
+  # stack: s, i+1
+  DUP
+  # stack: s, i+1, i+1
+  GREATER_OR_EQUALI 65535
+  # stack: s, i+1, 1 or 0
+  JUMP_IF_TRUE done
+  # stack: s, i+1
+  DUP
+  # stack: s, i+1, i+1
+  STOREI 0
+  # stack: s, i+1
+  ADD
+  # stack: s+i+1
+  JUMP incrementandadd
 
-done:
-DISCARD
-PRINT
-DONE
+  done:
+  DISCARD
+  PRINT
+  DONE
   #+END_EXAMPLE
 
   Не Python, конечно, но все необходимое для поросячьего счастья тут есть: комментарии, метки,
@@ -308,17 +307,15 @@ DONE
   Попробуем немного поправить главный switch:
 
   #+BEGIN_SRC cpp
-
   uint8_t instruction = NEXT_OP();
   /* Let the compiler know that opcodes are always between 0 and 31 */
   switch (instruction & 0x1f) {
      /* All the instructions here */
-     case 26 ... 0x1f:
+     case 26 ... 0x1f: {
          /*Handle the remaining 5 non-existing opcodes*/
          return ERROR_UNKNOWN_OPCODE;
      }
   }
-
   #+END_SRC
 
   Зная, что инструкций у нас всего 26 штук, мы накладываем битовую маску (восьмеричное значение
@@ -337,11 +334,9 @@ DONE
   Пробуем:
 
   #+BEGIN_EXAMPLE
-
   > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
   PROFILE: switch code finished took 437ms
   PROFILE: switch code (no range check) finished took 383ms
-
   #+END_EXAMPLE
 
   Еще 50 миллисекунд! Поросенок, ты будто бы в плечах раздался..?
@@ -429,18 +424,16 @@ DONE
   инструкции, он делает следующее:
 
   #+BEGIN_SRC cpp
-    static void trace_compile_handler(scode *trace_head)
-    {
-        scode *trace_tail = trace_head;
-
-        /*
-         * Trace building here
-         */
-
-        /* now, run the chain that has a trace_compile_handler replaced with proper instruction handler
-         * function pointer */
-        trace_head->handler(trace_head);
-    }
+  static void trace_compile_handler(scode *trace_head)
+  {
+      scode *trace_tail = trace_head;
+     /*
+       * Trace building here
+       */
+     /* now, run the chain that has a trace_compile_handler replaced with proper instruction handler
+       * function pointer */
+      trace_head->handler(trace_head);
+  }
 
   #+END_SRC
 
@@ -518,35 +511,35 @@ DONE
   на адреса меток обработчиков инструкций:
 
   #+BEGIN_SRC cpp
-    const void *labels[] = {
-        [OP_PUSHI] = &&op_pushi,
-        [OP_LOADI] = &&op_loadi,
-        [OP_LOADADDI] = &&op_loadaddi,
-        [OP_STORE] = &&op_store,
-        [OP_STOREI] = &&op_storei,
-        [OP_LOAD] = &&op_load,
-        [OP_DUP] = &&op_dup,
-        [OP_DISCARD] = &&op_discard,
-        [OP_ADD] = &&op_add,
-        [OP_ADDI] = &&op_addi,
-        [OP_SUB] = &&op_sub,
-        [OP_DIV] = &&op_div,
-        [OP_MUL] = &&op_mul,
-        [OP_JUMP] = &&op_jump,
-        [OP_JUMP_IF_TRUE] = &&op_jump_if_true,
-        [OP_JUMP_IF_FALSE] = &&op_jump_if_false,
-        [OP_EQUAL] = &&op_equal,
-        [OP_LESS] = &&op_less,
-        [OP_LESS_OR_EQUAL] = &&op_less_or_equal,
-        [OP_GREATER] = &&op_greater,
-        [OP_GREATER_OR_EQUAL] = &&op_greater_or_equal,
-        [OP_GREATER_OR_EQUALI] = &&op_greater_or_equali,
-        [OP_POP_RES] = &&op_pop_res,
-        [OP_DONE] = &&op_done,
-        [OP_PRINT] = &&op_print,
-        [OP_ABORT] = &&op_abort,
-    };
-  #+END_SRC
+  const void *labels[] = {
+      [OP_PUSHI] = &&op_pushi,
+      [OP_LOADI] = &&op_loadi,
+      [OP_LOADADDI] = &&op_loadaddi,
+      [OP_STORE] = &&op_store,
+      [OP_STOREI] = &&op_storei,
+      [OP_LOAD] = &&op_load,
+      [OP_DUP] = &&op_dup,
+      [OP_DISCARD] = &&op_discard,
+      [OP_ADD] = &&op_add,
+      [OP_ADDI] = &&op_addi,
+      [OP_SUB] = &&op_sub,
+      [OP_DIV] = &&op_div,
+      [OP_MUL] = &&op_mul,
+      [OP_JUMP] = &&op_jump,
+      [OP_JUMP_IF_TRUE] = &&op_jump_if_true,
+      [OP_JUMP_IF_FALSE] = &&op_jump_if_false,
+      [OP_EQUAL] = &&op_equal,
+      [OP_LESS] = &&op_less,
+      [OP_LESS_OR_EQUAL] = &&op_less_or_equal,
+      [OP_GREATER] = &&op_greater,
+      [OP_GREATER_OR_EQUAL] = &&op_greater_or_equal,
+      [OP_GREATER_OR_EQUALI] = &&op_greater_or_equali,
+      [OP_POP_RES] = &&op_pop_res,
+      [OP_DONE] = &&op_done,
+      [OP_PRINT] = &&op_print,
+      [OP_ABORT] = &&op_abort,
+  };
+#+END_SRC
 
   Обратите внимание на символы "&&" - это указатели на метки с телом инструкций, то самое
   нестандартное расширение GCC.
@@ -562,13 +555,13 @@ DONE
   обработчику:
 
   #+BEGIN_SRC cpp
-op_pushi: {
-        /* get the argument, push it onto stack */
-        uint16_t arg = NEXT_ARG();
-        PUSH(arg);
-        /* jump to the next instruction*/
-        goto *labels[NEXT_OP()];
-    }
+  op_pushi: {
+          /* get the argument, push it onto stack */
+          uint16_t arg = NEXT_ARG();
+          PUSH(arg);
+          /* jump to the next instruction*/
+          goto *labels[NEXT_OP()];
+      }
   #+END_SRC
 
   Отсутствие switch "размазывает" точки ветвлений по телам инструкций, что в теории должно помочь
@@ -578,22 +571,22 @@ op_pushi: {
   Вот и вся техника, Поросенку она очень понравилась. Давайте посмотрим, что получается на практике:
 
   #+BEGIN_EXAMPLE
-    > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
-    PROFILE: switch code finished took 443ms
-    PROFILE: switch code (no range check) finished took 389ms
-    PROFILE: threaded code finished took 477ms
-    PROFILE: trace code finished took 364ms
+  > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
+  PROFILE: switch code finished took 443ms
+  PROFILE: switch code (no range check) finished took 389ms
+  PROFILE: threaded code finished took 477ms
+  PROFILE: trace code finished took 364ms
   #+END_EXAMPLE
 
   Упс. Это самая медленная из всех наших техник! Что же случилось? Давайте попробуем те же тесты,
   выключив все оптимизации GCC:
 
   #+BEGIN_EXAMPLE
-    > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
-    PROFILE: switch code finished took 969ms
-    PROFILE: switch code (no range check) finished took 940ms
-    PROFILE: threaded code finished took 824ms
-    PROFILE: trace code finished took 1169ms
+  > ./pigletvm runtimes test/sieve.bin  100 > /dev/null
+  PROFILE: switch code finished took 969ms
+  PROFILE: switch code (no range check) finished took 940ms
+  PROFILE: threaded code finished took 824ms
+  PROFILE: trace code finished took 1169ms
   #+END_EXAMPLE
 
   Здесь "шитый" код показывает себя лучше.
@@ -631,6 +624,6 @@ op_pushi: {
   библиотеки вроде Gnu Lightning или libjit. Но время на разработку и общий объем кода даже с
   библиотеками здорово увеличиваются.
 
-  Есть и другие приемы, до которых у Поросенка просто не дошли копыта. Но пределов совершенству нет,
-  и наше свинское путешествие - вторая часть серии статей про интерпрепретаторы байт-кодов - все же
-  должно где-то закончиться.
+  Есть и другие приемы, до которых у Поросенка просто не дошли копыта. Но пределов совершенству нет, и наше
+  свинское путешествие - вторая часть серии статей про интерпрепретаторы байт-кодов - все же должно
+  где-то закончиться.
