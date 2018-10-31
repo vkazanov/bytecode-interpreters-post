@@ -162,6 +162,8 @@
 
   - что-то еще было?
 
-* TODO ссылки в статье
+* DONE finish the article
+* DONE вычитка
+* DONE ссылки в статье
 * TODO обновить комментарии на Гитхабе
-* TODO вычитка
+* TODO загрузить в Google Docs
