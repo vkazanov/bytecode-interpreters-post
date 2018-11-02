@@ -165,5 +165,5 @@
 * DONE finish the article
 * DONE вычитка
 * DONE ссылки в статье
-* TODO обновить комментарии на Гитхабе
-* TODO загрузить в Google Docs
+* DONE обновить комментарии на Гитхабе
+* DONE загрузить в Google Docs
