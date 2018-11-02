@@ -5,7 +5,9 @@ INTERPRETERS = basic-switch immediate-arg stack-machine register-machine regexp
 
 all: $(INTERPRETERS) pigletvm
 
-test: all
+test: test-interpreters pigletvm-test
+
+test-interpreters: $(INTERPRETERS)
 	$(foreach interpr,$(INTERPRETERS),./$(interpr);)
 
 %: interpreter-%.c
@@ -21,4 +23,4 @@ pigletvm-test: pigletvm.c pigletvm-test.c
 clean:
 	rm -vf $(INTERPRETERS) pigletvm pigletvm-test
 
-.PHONY: all clean pigletvm-test
+.PHONY: all clean pigletvm-test test-interpreters

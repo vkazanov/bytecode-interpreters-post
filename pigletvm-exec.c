@@ -536,6 +536,10 @@ int main(int argc, char *argv[])
         TIMER_END(start_time, end_time, "switch code finished");
 
         TIMER_START(start_time);
+        res = run_switch_no_range_check(bytecode);
+        TIMER_END(start_time, end_time, "switch code (no range check) finished");
+
+        TIMER_START(start_time);
         res = run_threaded(bytecode);
         TIMER_END(start_time, end_time, "threaded code finished");
 
