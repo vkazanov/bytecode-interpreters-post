@@ -9,8 +9,8 @@ make test
 
 Articles:
 
-1. DIY bytecode interpreters ([[file:interpreter-p1.org][source in Russian]], [[https://habr.com/company/badoo/blog/425325/][published in Russian]])
-2. The Flight of a Pig, or a bunch of fast PigletVM interpreters ([[file:interpreter-p2-pigletvm.org][source in Russian]])
+1. DIY bytecode interpreters ([[file:interpreter-p1.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/425325/][published in Russian]])
+2. The Flight of a Pig, or a bunch of fast PigletVM interpreters ([[file:interpreter-p2-pigletvm.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/428878/][published in Russian]])
 
 Bytecode interpreter examples contain:
 
