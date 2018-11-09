@@ -1,3 +1,5 @@
+* What..?
+
 A few basic bytecode interpreters used as example code in a series of articles. Given a recent GCC
 all the interpreters can be compiled in one go using a supplied Makefile:
 
@@ -6,7 +8,7 @@ make all
 make test
 #+END_SRC
 
-* What..?
+* Where?
 
 Articles:
 
@@ -22,15 +24,12 @@ Bytecode interpreter examples contain:
 5. A [[file:interpreter-regexp.c][regular expression matching machine]].
 6. A set of various main loop implementations for [[file:pigletvm.h][PigletVM]]
 
-* A trivial stack machine - PigletVM
+* Anything else? A trivial stack machine - PigletVM!
 
 PigletVM examples in PVM assembly:
 
 1. A trivial [[file:test/sum.pvm][Sum of Numbers]]
 2. Naive implementation of the [[file:test/sieve.pvm][Sieve of Eratosthenes]]
-
-Apart from assembler there's a better way to write PigletVM programs. @true-grue somehow managed to
-implement a proper language compiled into PigletmVM assembler: [[https://github.com/true-grue/PigletC][PigletC]]!
 
 Compiling and running PigletVM assembler examples:
 
@@ -51,3 +50,8 @@ PROFILE: switch code (no range check) finished took 398ms
 PROFILE: threaded code finished took 485ms
 PROFILE: trace code finished took 376ms
 #+END_EXAMPLE
+
+* Want a proper language to write programs for PigletVM? PigletC to the rescue
+
+Apart from assembler there's a better way to write PigletVM programs. @true-grue somehow managed to
+implement a proper language compiled into PigletmVM assembler: [[https://github.com/true-grue/PigletC][PigletC]]!
