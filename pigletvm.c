@@ -26,11 +26,11 @@
 #define PEEK_ARG()                              \
     ((ip[0] << 8) + ip[1])
 #define POP()                                   \
-    (*(--stack_top))
+    ({ uint64_t tmp = acc; acc = *(--stack_top); tmp; })
 #define PUSH(val)                               \
-    (*stack_top = (val), stack_top++)
+    (*stack_top = acc, stack_top++, acc = (val))
 #define TOP()                                  \
-    (*(stack_top - 1))
+    (acc)
 
 
 /*
@@ -102,9 +102,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
         }
         case OP_LOAD: {
             /* pop an address, use it to get a value onto stack */
-            uint16_t addr = POP();
-            uint64_t val = vm.memory[addr];
-            PUSH(val);
+            TOP() = vm.memory[TOP()];
             break;
         }
         case OP_STORE: {
@@ -276,9 +274,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         }
         case OP_LOAD: {
             /* pop an address, use it to get a value onto stack */
-            uint16_t addr = POP();
-            uint64_t val = vm.memory[addr];
-            PUSH(val);
+            TOP() = vm.memory[TOP()];
             break;
         }
         case OP_STORE: {
@@ -478,9 +474,7 @@ op_storei: {
     }
 op_load: {
         /* pop an address, use it to get a value onto stack */
-        uint16_t addr = POP();
-        uint64_t val = vm.memory[addr];
-        PUSH(val);
+        TOP() = vm.memory[TOP()];
         goto *labels[NEXT_OP()];
     }
 op_store: {
