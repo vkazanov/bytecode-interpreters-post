@@ -53,5 +53,5 @@ PROFILE: trace code finished took 376ms
 
 * Want a proper language to write programs for PigletVM? PigletC to the rescue
 
-Apart from assembler there's a better way to write PigletVM programs. @true-grue somehow managed to
+Apart from assembler there's a better way to write PigletVM programs. [[https://github.com/true-grue][@true-grue]] somehow managed to
 implement a proper language compiled into PigletmVM assembler: [[https://github.com/true-grue/PigletC][PigletC]]!
