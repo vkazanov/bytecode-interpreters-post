@@ -22,7 +22,7 @@ Bytecode interpreter examples contain:
 3. [[file:interpreter-stack-machine.c][A stack vm]].
 4. [[file:interpreter-register-machine.c][A register vm]].
 5. A [[file:interpreter-regexp.c][regular expression matching machine]].
-6. A set of various main loop implementations for [[file:pigletvm.h][PigletVM]]
+6. Various main loop implementations for [[file:pigletvm.h][PigletVM]]
 
 * Anything else? A trivial stack machine - PigletVM!
 
@@ -51,7 +51,7 @@ PROFILE: threaded code finished took 485ms
 PROFILE: trace code finished took 376ms
 #+END_EXAMPLE
 
-* Want a proper language to write programs for PigletVM? PigletC to the rescue
+* Want a proper language for PigletVM? PigletC to the rescue!
 
 Apart from assembler there's a better way to write PigletVM programs. [[https://github.com/true-grue][@true-grue]] somehow managed to
 implement a proper language compiled into PigletmVM assembler: [[https://github.com/true-grue/PigletC][PigletC]]!
