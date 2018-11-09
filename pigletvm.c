@@ -11,20 +11,26 @@
 #define STACK_MAX 256
 #define MEMORY_SIZE 65536
 
+#define LOAD_REGS()                             \
+    register uint8_t *ip = vm.ip;               \
+    register uint64_t *stack_top = vm.stack_top
+#define STORE_REGS()                            \
+    vm.ip = ip;                                 \
+    vm.stack_top = stack_top
 #define NEXT_OP()                               \
-    (*vm.ip++)
+    (*ip++)
 #define NEXT_ARG()                                      \
-    ((void)(vm.ip += 2), (vm.ip[-2] << 8) + vm.ip[-1])
+    ((void)(ip += 2), (ip[-2] << 8) + ip[-1])
 #define PEEK_ARG()                              \
-    ((vm.ip[0] << 8) + vm.ip[1])
+    ((ip[0] << 8) + ip[1])
 #define POP()                                   \
-    (*(--vm.stack_top))
+    (*(--stack_top))
 #define PUSH(val)                               \
-    (*vm.stack_top = (val), vm.stack_top++)
+    (*stack_top = (val), stack_top++)
 #define PEEK()                                  \
-    (*(vm.stack_top - 1))
+    (*(stack_top - 1))
 #define TOS_PTR()                               \
-    (vm.stack_top - 1)
+    (stack_top - 1)
 
 
 /*
@@ -57,6 +63,8 @@ static void vm_reset(uint8_t *bytecode)
 interpret_result vm_interpret(uint8_t *bytecode)
 {
     vm_reset(bytecode);
+
+    LOAD_REGS();
 
     for (;;) {
         uint8_t instruction = NEXT_OP();
@@ -134,8 +142,10 @@ interpret_result vm_interpret(uint8_t *bytecode)
             /* Pop 2 values, divide 'em, push the result back to the stack */
             uint64_t arg_right = POP();
             /* Don't forget to handle the div by zero error */
-            if (arg_right == 0)
+            if (arg_right == 0) {
+                STORE_REGS();
                 return ERROR_DIVISION_BY_ZERO;
+            }
             *TOS_PTR() /= arg_right;
             break;
         }
@@ -148,21 +158,21 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_JUMP:{
             /* Use arg as a jump target  */
             uint16_t target = PEEK_ARG();
-            vm.ip = bytecode + target;
+            ip = bytecode + target;
             break;
         }
         case OP_JUMP_IF_TRUE:{
             /* Use arg as a jump target  */
             uint16_t target = NEXT_ARG();
             if (POP())
-                vm.ip = bytecode + target;
+                ip = bytecode + target;
             break;
         }
         case OP_JUMP_IF_FALSE:{
             /* Use arg as a jump target  */
             uint16_t target = NEXT_ARG();
             if (!POP())
-                vm.ip = bytecode + target;
+                ip = bytecode + target;
             break;
         }
         case OP_EQUAL:{
@@ -202,6 +212,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
             break;
         }
         case OP_DONE: {
+            STORE_REGS();
             return SUCCESS;
         }
         case OP_PRINT:{
@@ -210,19 +221,24 @@ interpret_result vm_interpret(uint8_t *bytecode)
             break;
         }
         case OP_ABORT: {
+            STORE_REGS();
             return ERROR_END_OF_STREAM;
         }
         default:
+            STORE_REGS();
             return ERROR_UNKNOWN_OPCODE;
         }
     }
 
+    STORE_REGS();
     return ERROR_END_OF_STREAM;
 }
 
 interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
 {
     vm_reset(bytecode);
+
+    LOAD_REGS();
 
     for (;;) {
         uint8_t instruction = NEXT_OP();
@@ -300,8 +316,10 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
             /* Pop 2 values, divide 'em, push the result back to the stack */
             uint64_t arg_right = POP();
             /* Don't forget to handle the div by zero error */
-            if (arg_right == 0)
+            if (arg_right == 0) {
+                STORE_REGS();
                 return ERROR_DIVISION_BY_ZERO;
+            }
             *TOS_PTR() /= arg_right;
             break;
         }
@@ -314,21 +332,21 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         case OP_JUMP:{
             /* Use arg as a jump target  */
             uint16_t target = PEEK_ARG();
-            vm.ip = bytecode + target;
+            ip = bytecode + target;
             break;
         }
         case OP_JUMP_IF_TRUE:{
             /* Use arg as a jump target  */
             uint16_t target = NEXT_ARG();
             if (POP())
-                vm.ip = bytecode + target;
+                ip = bytecode + target;
             break;
         }
         case OP_JUMP_IF_FALSE:{
             /* Use arg as a jump target  */
             uint16_t target = NEXT_ARG();
             if (!POP())
-                vm.ip = bytecode + target;
+                ip = bytecode + target;
             break;
         }
         case OP_EQUAL:{
@@ -368,6 +386,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
             break;
         }
         case OP_DONE: {
+            STORE_REGS();
             return SUCCESS;
         }
         case OP_PRINT:{
@@ -376,19 +395,24 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
             break;
         }
         case OP_ABORT: {
+            STORE_REGS();
             return ERROR_END_OF_STREAM;
         }
         case 26 ... 0x1f:
+            STORE_REGS();
             return ERROR_UNKNOWN_OPCODE;
         }
     }
 
+    STORE_REGS();
     return ERROR_END_OF_STREAM;
 }
 
 interpret_result vm_interpret_threaded(uint8_t *bytecode)
 {
     vm_reset(bytecode);
+
+    LOAD_REGS();
 
     const void *labels[] = {
         [OP_PUSHI] = &&op_pushi,
@@ -494,8 +518,10 @@ op_div: {
         /* Pop 2 values, divide 'em, push the result back to the stack */
         uint64_t arg_right = POP();
         /* Don't forget to handle the div by zero error */
-        if (arg_right == 0)
+        if (arg_right == 0) {
+            STORE_REGS();
             return ERROR_DIVISION_BY_ZERO;
+        }
         *TOS_PTR() /= arg_right;
         goto *labels[NEXT_OP()];
     }
@@ -508,21 +534,21 @@ op_mul: {
 op_jump:{
         /* Use arg as a jump target  */
         uint16_t target = PEEK_ARG();
-        vm.ip = bytecode + target;
+        ip = bytecode + target;
         goto *labels[NEXT_OP()];
     }
 op_jump_if_true:{
         /* Use arg as a jump target  */
         uint16_t target = NEXT_ARG();
         if (POP())
-            vm.ip = bytecode + target;
+            ip = bytecode + target;
         goto *labels[NEXT_OP()];
     }
 op_jump_if_false:{
         /* Use arg as a jump target  */
         uint16_t target = NEXT_ARG();
         if (!POP())
-            vm.ip = bytecode + target;
+            ip = bytecode + target;
         goto *labels[NEXT_OP()];
     }
 op_equal:{
@@ -570,9 +596,11 @@ op_print:{
         goto *labels[NEXT_OP()];
     }
 op_abort: {
+        STORE_REGS();
         return ERROR_END_OF_STREAM;
     }
 end:
+    STORE_REGS();
     return SUCCESS;
 }
 
@@ -582,6 +610,8 @@ uint64_t vm_get_result(void)
     return vm.result;
 }
 
+#undef LOAD_REGS
+#undef STORE_REGS
 #undef NEXT_OP
 #undef NEXT_ARG
 #undef PEEK_ARG
