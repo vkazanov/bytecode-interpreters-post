@@ -13,10 +13,12 @@
 
 #define LOAD_REGS()                             \
     register uint8_t *ip = vm.ip;               \
-    register uint64_t *stack_top = vm.stack_top
+    register uint64_t *stack_top = vm.stack_top;\
+    register uint64_t acc = vm.acc
 #define STORE_REGS()                            \
     vm.ip = ip;                                 \
-    vm.stack_top = stack_top
+    vm.stack_top = stack_top;                   \
+    vm.acc = acc
 #define NEXT_OP()                               \
     (*ip++)
 #define NEXT_ARG()                                      \
@@ -27,10 +29,8 @@
     (*(--stack_top))
 #define PUSH(val)                               \
     (*stack_top = (val), stack_top++)
-#define PEEK()                                  \
+#define TOP()                                  \
     (*(stack_top - 1))
-#define TOS_PTR()                               \
-    (stack_top - 1)
 
 
 /*
@@ -40,6 +40,9 @@
 static struct {
     /* Current instruction pointer */
     uint8_t *ip;
+
+    /* Accumulator register */
+    uint64_t acc;
 
     /* Fixed-size stack */
     uint64_t stack[STACK_MAX];
@@ -55,6 +58,7 @@ static struct {
 static void vm_reset(uint8_t *bytecode)
 {
     vm = (typeof(vm)) {
+        .acc = 0,
         .stack_top = vm.stack,
         .ip = bytecode
     };
@@ -86,7 +90,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
             /* get the argument, add the value from the address to the top of the stack */
             uint16_t addr = NEXT_ARG();
             uint64_t val = vm.memory[addr];
-            *TOS_PTR() += val;
+            TOP() += val;
             break;
         }
         case OP_STOREI: {
@@ -112,7 +116,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
         }
         case OP_DUP:{
             /* duplicate the top of the stack */
-            PUSH(PEEK());
+            PUSH(TOP());
             break;
         }
         case OP_DISCARD: {
@@ -123,19 +127,19 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_ADD: {
             /* Pop 2 values, add 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            *TOS_PTR() += arg_right;
+            TOP() += arg_right;
             break;
         }
         case OP_ADDI: {
             /* Add immediate value to the top of the stack */
             uint16_t arg_right = NEXT_ARG();
-            *TOS_PTR() += arg_right;
+            TOP() += arg_right;
             break;
         }
         case OP_SUB: {
             /* Pop 2 values, subtract 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            *TOS_PTR() -= arg_right;
+            TOP() -= arg_right;
             break;
         }
         case OP_DIV: {
@@ -146,13 +150,13 @@ interpret_result vm_interpret(uint8_t *bytecode)
                 STORE_REGS();
                 return ERROR_DIVISION_BY_ZERO;
             }
-            *TOS_PTR() /= arg_right;
+            TOP() /= arg_right;
             break;
         }
         case OP_MUL: {
             /* Pop 2 values, multiply 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            *TOS_PTR() *= arg_right;
+            TOP() *= arg_right;
             break;
         }
         case OP_JUMP:{
@@ -177,32 +181,32 @@ interpret_result vm_interpret(uint8_t *bytecode)
         }
         case OP_EQUAL:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() == arg_right;
+            TOP() = TOP() == arg_right;
             break;
         }
         case OP_LESS:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() < arg_right;
+            TOP() = TOP() < arg_right;
             break;
         }
         case OP_LESS_OR_EQUAL:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() <= arg_right;
+            TOP() = TOP() <= arg_right;
             break;
         }
         case OP_GREATER:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() > arg_right;
+            TOP() = TOP() > arg_right;
             break;
         }
         case OP_GREATER_OR_EQUAL:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() >= arg_right;
+            TOP() = TOP() >= arg_right;
             break;
         }
         case OP_GREATER_OR_EQUALI:{
             uint64_t arg_right = NEXT_ARG();
-            *TOS_PTR() = PEEK() >= arg_right;
+            TOP() = TOP() >= arg_right;
             break;
         }
         case OP_POP_RES: {
@@ -260,7 +264,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
             /* get the argument, add the value from the address to the top of the stack */
             uint16_t addr = NEXT_ARG();
             uint64_t val = vm.memory[addr];
-            *TOS_PTR() += val;
+            TOP() += val;
             break;
         }
         case OP_STOREI: {
@@ -286,7 +290,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         }
         case OP_DUP:{
             /* duplicate the top of the stack */
-            PUSH(PEEK());
+            PUSH(TOP());
             break;
         }
         case OP_DISCARD: {
@@ -297,19 +301,19 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         case OP_ADD: {
             /* Pop 2 values, add 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            *TOS_PTR() += arg_right;
+            TOP() += arg_right;
             break;
         }
         case OP_ADDI: {
             /* Add immediate value to the top of the stack */
             uint16_t arg_right = NEXT_ARG();
-            *TOS_PTR() += arg_right;
+            TOP() += arg_right;
             break;
         }
         case OP_SUB: {
             /* Pop 2 values, subtract 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            *TOS_PTR() -= arg_right;
+            TOP() -= arg_right;
             break;
         }
         case OP_DIV: {
@@ -320,13 +324,13 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
                 STORE_REGS();
                 return ERROR_DIVISION_BY_ZERO;
             }
-            *TOS_PTR() /= arg_right;
+            TOP() /= arg_right;
             break;
         }
         case OP_MUL: {
             /* Pop 2 values, multiply 'em, push the result back to the stack */
             uint64_t arg_right = POP();
-            *TOS_PTR() *= arg_right;
+            TOP() *= arg_right;
             break;
         }
         case OP_JUMP:{
@@ -351,32 +355,32 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         }
         case OP_EQUAL:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() == arg_right;
+            TOP() = TOP() == arg_right;
             break;
         }
         case OP_LESS:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() < arg_right;
+            TOP() = TOP() < arg_right;
             break;
         }
         case OP_LESS_OR_EQUAL:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() <= arg_right;
+            TOP() = TOP() <= arg_right;
             break;
         }
         case OP_GREATER:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() > arg_right;
+            TOP() = TOP() > arg_right;
             break;
         }
         case OP_GREATER_OR_EQUAL:{
             uint64_t arg_right = POP();
-            *TOS_PTR() = PEEK() >= arg_right;
+            TOP() = TOP() >= arg_right;
             break;
         }
         case OP_GREATER_OR_EQUALI:{
             uint64_t arg_right = NEXT_ARG();
-            *TOS_PTR() = PEEK() >= arg_right;
+            TOP() = TOP() >= arg_right;
             break;
         }
         case OP_POP_RES: {
@@ -462,7 +466,7 @@ op_loadaddi: {
         /* get the argument, add the value from the address to the top of the stack */
         uint16_t addr = NEXT_ARG();
         uint64_t val = vm.memory[addr];
-        *TOS_PTR() += val;
+        TOP() += val;
         goto *labels[NEXT_OP()];
     }
 op_storei: {
@@ -488,7 +492,7 @@ op_store: {
     }
 op_dup:{
         /* duplicate the top of the stack */
-        PUSH(PEEK());
+        PUSH(TOP());
         goto *labels[NEXT_OP()];
     }
 op_discard: {
@@ -499,19 +503,19 @@ op_discard: {
 op_add: {
         /* Pop 2 values, add 'em, push the result back to the stack */
         uint64_t arg_right = POP();
-        *TOS_PTR() += arg_right;
+        TOP() += arg_right;
         goto *labels[NEXT_OP()];
     }
 op_addi: {
         /* Add immediate value to the top of the stack */
         uint16_t arg_right = NEXT_ARG();
-        *TOS_PTR() += arg_right;
+        TOP() += arg_right;
         goto *labels[NEXT_OP()];
     }
 op_sub: {
         /* Pop 2 values, subtract 'em, push the result back to the stack */
         uint64_t arg_right = POP();
-        *TOS_PTR() -= arg_right;
+        TOP() -= arg_right;
         goto *labels[NEXT_OP()];
     }
 op_div: {
@@ -522,13 +526,13 @@ op_div: {
             STORE_REGS();
             return ERROR_DIVISION_BY_ZERO;
         }
-        *TOS_PTR() /= arg_right;
+        TOP() /= arg_right;
         goto *labels[NEXT_OP()];
     }
 op_mul: {
         /* Pop 2 values, multiply 'em, push the result back to the stack */
         uint64_t arg_right = POP();
-        *TOS_PTR() *= arg_right;
+        TOP() *= arg_right;
         goto *labels[NEXT_OP()];
     }
 op_jump:{
@@ -553,32 +557,32 @@ op_jump_if_false:{
     }
 op_equal:{
         uint64_t arg_right = POP();
-        *TOS_PTR() = PEEK() == arg_right;
+        TOP() = TOP() == arg_right;
         goto *labels[NEXT_OP()];
     }
 op_less:{
         uint64_t arg_right = POP();
-        *TOS_PTR() = PEEK() < arg_right;
+        TOP() = TOP() < arg_right;
         goto *labels[NEXT_OP()];
     }
 op_less_or_equal:{
         uint64_t arg_right = POP();
-        *TOS_PTR() = PEEK() <= arg_right;
+        TOP() = TOP() <= arg_right;
         goto *labels[NEXT_OP()];
     }
 op_greater:{
         uint64_t arg_right = POP();
-        *TOS_PTR() = PEEK() > arg_right;
+        TOP() = TOP() > arg_right;
         goto *labels[NEXT_OP()];
     }
 op_greater_or_equal:{
         uint64_t arg_right = POP();
-        *TOS_PTR() = PEEK() >= arg_right;
+        TOP() = TOP() >= arg_right;
         goto *labels[NEXT_OP()];
     }
 op_greater_or_equali:{
         uint64_t arg_right = NEXT_ARG();
-        *TOS_PTR() = PEEK() >= arg_right;
+        TOP() = TOP() >= arg_right;
         goto *labels[NEXT_OP()];
     }
 op_pop_res: {
@@ -617,8 +621,7 @@ uint64_t vm_get_result(void)
 #undef PEEK_ARG
 #undef POP
 #undef PUSH
-#undef PEEK
-#undef TOS_PTR
+#undef TOP
 
 /*
  * trace-based vm interpreter
