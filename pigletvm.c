@@ -625,10 +625,8 @@ uint64_t vm_get_result(void)
     (*(--vm_trace.stack_top))
 #define PUSH(val)                               \
     (*vm_trace.stack_top = (val), vm_trace.stack_top++)
-#define PEEK()                                  \
+#define TOP()                                   \
     (*(vm_trace.stack_top - 1))
-#define TOS_PTR()                               \
-    (vm_trace.stack_top - 1)
 #define NEXT_HANDLER(code)                      \
     (((code)++), (code)->handler((code)))
 #define ARG_AT_PC(bytecode, pc)                                         \
@@ -694,7 +692,7 @@ static void op_loadaddi_handler(scode *code)
 {
     uint64_t addr = code->arg;
     uint64_t val = vm_trace.memory[addr];
-    *TOS_PTR() += val;
+    TOP() += val;
 
     NEXT_HANDLER(code);
 }
@@ -729,7 +727,7 @@ static void op_store_handler(scode *code)
 
 static void op_dup_handler(scode *code)
 {
-    PUSH(PEEK());
+    PUSH(TOP());
 
     NEXT_HANDLER(code);
 }
@@ -744,7 +742,7 @@ static void op_discard_handler(scode *code)
 static void op_add_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() += arg_right;
+    TOP() += arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -752,7 +750,7 @@ static void op_add_handler(scode *code)
 static void op_addi_handler(scode *code)
 {
     uint16_t arg_right = code->arg;
-    *TOS_PTR() += arg_right;
+    TOP() += arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -760,7 +758,7 @@ static void op_addi_handler(scode *code)
 static void op_sub_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() -= arg_right;
+    TOP() -= arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -770,7 +768,7 @@ static void op_div_handler(scode *code)
     uint64_t arg_right = POP();
     /* Don't forget to handle the div by zero error */
     if (arg_right != 0) {
-        *TOS_PTR() /= arg_right;
+        TOP() /= arg_right;
     } else {
         vm_trace.is_running = false;
         vm_trace.error = ERROR_DIVISION_BY_ZERO;
@@ -783,7 +781,7 @@ static void op_div_handler(scode *code)
 static void op_mul_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() *= arg_right;
+    TOP() *= arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -815,7 +813,7 @@ static void op_jump_if_false_handler(scode *code)
 static void op_equal_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() = PEEK() == arg_right;
+    TOP() = TOP() == arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -823,7 +821,7 @@ static void op_equal_handler(scode *code)
 static void op_less_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() = PEEK() < arg_right;
+    TOP() = TOP() < arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -831,14 +829,14 @@ static void op_less_handler(scode *code)
 static void op_less_or_equal_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() = PEEK() <= arg_right;
+    TOP() = TOP() <= arg_right;
 
     NEXT_HANDLER(code);
 }
 static void op_greater_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() = PEEK() > arg_right;
+    TOP() = TOP() > arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -846,7 +844,7 @@ static void op_greater_handler(scode *code)
 static void op_greater_or_equal_handler(scode *code)
 {
     uint64_t arg_right = POP();
-    *TOS_PTR() = PEEK() >= arg_right;
+    TOP() = TOP() >= arg_right;
 
     NEXT_HANDLER(code);
 }
@@ -854,7 +852,7 @@ static void op_greater_or_equal_handler(scode *code)
 static void op_greater_or_equali_handler(scode *code)
 {
     uint64_t arg_right = code->arg;
-    *TOS_PTR() = PEEK() >= arg_right;
+    TOP() = TOP() >= arg_right;
 
     NEXT_HANDLER(code);
 }
