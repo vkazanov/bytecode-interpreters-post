@@ -13,10 +13,10 @@ test-interpreters: $(INTERPRETERS)
 %: interpreter-%.c
 	$(CC) $(CFLAGS) $< -o $@
 
-pigletvm: pigletvm-rcache.c pigletvm-exec.c
+pigletvm: pigletvm.c pigletvm-rcache.c pigletvm-exec.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-pigletvm-test: pigletvm-rcache.c pigletvm-test.c
+pigletvm-test: pigletvm.c pigletvm-rcache.c pigletvm-test.c
 	$(CC) -g $(CFLAGS) $^ -o $@
 	./pigletvm-test
 
