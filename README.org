@@ -26,10 +26,27 @@ Bytecode interpreter examples contain:
 
 * Anything else? A trivial stack machine - PigletVM!
 
+PigletVM is a simple stack machine created for testing various bytecode interpreter main loop
+implementations.
+
 PigletVM examples in PVM assembly:
 
 1. A trivial [[file:test/sum.pvm][Sum of Numbers]]
 2. Naive implementation of the [[file:test/sieve.pvm][Sieve of Eratosthenes]]
+
+Base techinques implemented:
+
+1. basic switch
+2. basic switch with the switch value range check eliminated
+3. token threaded code
+4. trace interpreter
+
+Thanks to [[https://github.com/iliazeus][@iliazeus]] we now have a second set of the same interpreters with stack top cached:
+
+1. basic switch with stack top cache
+2. switch with no range check and stack top cache
+3. token threaded code with a stack cache
+4. trace interpreter with a stack cache
 
 Compiling and running PigletVM assembler examples:
 
@@ -38,17 +55,26 @@ Compiling and running PigletVM assembler examples:
 > make all
 > # Assemble the program and run it
 > ./pigletvm asm test/sieve.pvm test/sieve.bin
-> ./pigletvm run test/sieve.bin > /dev/null
-PROFILE: switch code finished took 22ms
-PROFILE: switch code (no range check) finished took 13ms
-PROFILE: threaded code finished took 8ms
-PROFILE: trace code finished took 4ms
+> ./pigletvm run test/sieve.bin > /dev/null                                                                                  07:54:24
+PROFILE: switch code finished took 20ms
+PROFILE: switch code (no range check) finished took 16ms
+PROFILE: threaded code finished took 7ms
+PROFILE: trace code finished took 8ms
+PROFILE: switch code (reg cache) finished took 4ms
+PROFILE: switch code (reg cache) (no range check) finished took 3ms
+PROFILE: threaded code (reg cache) finished took 2ms
+PROFILE: trace code (reg cache) finished took 5ms
 > # Run the assembled program a number of times:
-> ./pigletvm runtimes test/sieve.bin 100 > /dev/null
-PROFILE: switch code finished took 445ms
-PROFILE: switch code (no range check) finished took 398ms
-PROFILE: threaded code finished took 485ms
-PROFILE: trace code finished took 376ms
+> ./pigletvm runtimes test/sieve.bin 100 > /dev/null                                                                         07:54:25
+PROFILE: switch code finished took 430ms
+PROFILE: switch code (no range check) finished took 384ms
+PROFILE: threaded code finished took 472ms
+PROFILE: trace code finished took 363ms
+PROFILE: switch code (reg cache) finished took 350ms
+PROFILE: switch code (reg cache) (no range check) finished took 304ms
+PROFILE: threaded code (reg cache) finished took 255ms
+PROFILE: trace code (reg cache) finished took 301ms
+
 #+END_EXAMPLE
 
 * Want a proper language for PigletVM? PigletC to the rescue!
