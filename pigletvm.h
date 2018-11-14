@@ -73,14 +73,14 @@ typedef enum {
     OP_NUMBER_OF_OPS
 } opcode;
 
-interpret_result vm_interpret(uint8_t *bytecode);
+interpret_result vm_rcache_interpret(uint8_t *bytecode);
 
-interpret_result vm_interpret_no_range_check(uint8_t *bytecode);
+interpret_result vm_rcache_interpret_no_range_check(uint8_t *bytecode);
 
-interpret_result vm_interpret_threaded(uint8_t *bytecode);
+interpret_result vm_rcache_interpret_threaded(uint8_t *bytecode);
 
-uint64_t vm_get_result(void);
+uint64_t vm_rcache_get_result(void);
 
-interpret_result vm_interpret_trace(uint8_t *bytecode);
+interpret_result vm_rcache_interpret_trace(uint8_t *bytecode);
 
-uint64_t vm_trace_get_result(void);
+uint64_t vm_rcache_trace_get_result(void);

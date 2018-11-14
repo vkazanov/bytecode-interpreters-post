@@ -132,50 +132,50 @@ static int disassemble(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
-static int run_switch(uint8_t *bytecode)
+static int run_rcache_switch(uint8_t *bytecode)
 {
-    interpret_result res = vm_interpret(bytecode);
+    interpret_result res = vm_rcache_interpret(bytecode);
     if (res != SUCCESS) {
         fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
         return EXIT_FAILURE;
     }
-    uint64_t result_value = vm_get_result();
+    uint64_t result_value = vm_rcache_get_result();
     printf("Result value: %" PRIu64 "\n", result_value);
     return EXIT_SUCCESS;
 }
 
-static int run_switch_no_range_check(uint8_t *bytecode)
+static int run_rcache_switch_no_range_check(uint8_t *bytecode)
 {
-    interpret_result res = vm_interpret_no_range_check(bytecode);
+    interpret_result res = vm_rcache_interpret_no_range_check(bytecode);
     if (res != SUCCESS) {
         fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
         return EXIT_FAILURE;
     }
-    uint64_t result_value = vm_get_result();
+    uint64_t result_value = vm_rcache_get_result();
     printf("Result value: %" PRIu64 "\n", result_value);
     return EXIT_SUCCESS;
 }
 
-static int run_threaded(uint8_t *bytecode)
+static int run_rcache_threaded(uint8_t *bytecode)
 {
-    interpret_result res = vm_interpret_threaded(bytecode);
+    interpret_result res = vm_rcache_interpret_threaded(bytecode);
     if (res != SUCCESS) {
         fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
         return EXIT_FAILURE;
     }
-    uint64_t result_value = vm_get_result();
+    uint64_t result_value = vm_rcache_get_result();
     printf("Result value: %" PRIu64 "\n", result_value);
     return EXIT_SUCCESS;
 }
 
-static int run_trace(uint8_t *bytecode)
+static int run_rcache_trace(uint8_t *bytecode)
 {
-    interpret_result res = vm_interpret_trace(bytecode);
+    interpret_result res = vm_rcache_interpret_trace(bytecode);
     if (res != SUCCESS) {
         fprintf(stderr, "Runtime error: %s\n", error_to_msg[res]);
         return EXIT_FAILURE;
     }
-    uint64_t result_value = vm_get_result();
+    uint64_t result_value = vm_rcache_get_result();
     printf("Result value: %" PRIu64 "\n", result_value);
     return EXIT_SUCCESS;
 }
@@ -532,20 +532,20 @@ int main(int argc, char *argv[])
         TIMER_DEF(start_time, end_time);
 
         TIMER_START(start_time);
-        res = run_switch(bytecode);
-        TIMER_END(start_time, end_time, "switch code finished");
+        res = run_rcache_switch(bytecode);
+        TIMER_END(start_time, end_time, "switch code (reg cache) finished");
 
         TIMER_START(start_time);
-        res = run_switch_no_range_check(bytecode);
-        TIMER_END(start_time, end_time, "switch code (no range check) finished");
+        res = run_rcache_switch_no_range_check(bytecode);
+        TIMER_END(start_time, end_time, "switch code (reg cache) (no range check) finished");
 
         TIMER_START(start_time);
-        res = run_threaded(bytecode);
-        TIMER_END(start_time, end_time, "threaded code finished");
+        res = run_rcache_threaded(bytecode);
+        TIMER_END(start_time, end_time, "threaded code (reg cache) finished");
 
         TIMER_START(start_time);
-        res = run_trace(bytecode);
-        TIMER_END(start_time, end_time, "trace code finished");
+        res = run_rcache_trace(bytecode);
+        TIMER_END(start_time, end_time, "trace code (reg cache) finished");
 
         free(bytecode);
     } else if (0 == strcmp(cmd, "runtimes")) {
@@ -567,23 +567,23 @@ int main(int argc, char *argv[])
 
         TIMER_START(start_time);
         for (int i = 0; i < num_iterations; i++)
-            res = run_switch(bytecode);
-        TIMER_END(start_time, end_time, "switch code finished");
+            res = run_rcache_switch(bytecode);
+        TIMER_END(start_time, end_time, "switch code (reg cache) finished");
 
         TIMER_START(start_time);
         for (int i = 0; i < num_iterations; i++)
-            res = run_switch_no_range_check(bytecode);
-        TIMER_END(start_time, end_time, "switch code (no range check) finished");
+            res = run_rcache_switch_no_range_check(bytecode);
+        TIMER_END(start_time, end_time, "switch code (reg cache) (no range check) finished");
 
         TIMER_START(start_time);
         for (int i = 0; i < num_iterations; i++)
-            res = run_threaded(bytecode);
-        TIMER_END(start_time, end_time, "threaded code finished");
+            res = run_rcache_threaded(bytecode);
+        TIMER_END(start_time, end_time, "threaded code (reg cache) finished");
 
         TIMER_START(start_time);
         for (int i = 0; i < num_iterations; i++)
-            res = run_trace(bytecode);
-        TIMER_END(start_time, end_time, "trace code finished");
+            res = run_rcache_trace(bytecode);
+        TIMER_END(start_time, end_time, "trace code (reg cache) finished");
 
         free(bytecode);
     } else if (0 == strcmp(cmd, "asm")) {

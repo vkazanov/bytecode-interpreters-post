@@ -12,13 +12,13 @@
 #define MEMORY_SIZE 65536
 
 #define LOAD_REGS()                             \
-    register uint8_t *ip = vm.ip;               \
-    register uint64_t *stack_top = vm.stack_top;\
-    register uint64_t acc = vm.acc
+    register uint8_t *ip = vm_rcache.ip;               \
+    register uint64_t *stack_top = vm_rcache.stack_top;\
+    register uint64_t acc = vm_rcache.acc
 #define STORE_REGS()                            \
-    vm.ip = ip;                                 \
-    vm.stack_top = stack_top;                   \
-    vm.acc = acc
+    vm_rcache.ip = ip;                                 \
+    vm_rcache.stack_top = stack_top;                   \
+    vm_rcache.acc = acc
 #define NEXT_OP()                               \
     (*ip++)
 #define NEXT_ARG()                                      \
@@ -34,7 +34,7 @@
 
 
 /*
- * switch or threaded vm
+ * switch or threaded vm_rcache
  * */
 
 static struct {
@@ -53,20 +53,20 @@ static struct {
 
     /* A single register containing the result */
     uint64_t result;
-} vm;
+} vm_rcache;
 
-static void vm_reset(uint8_t *bytecode)
+static void vm_rcache_reset(uint8_t *bytecode)
 {
-    vm = (typeof(vm)) {
+    vm_rcache = (typeof(vm_rcache)) {
         .acc = 0,
-        .stack_top = vm.stack,
+        .stack_top = vm_rcache.stack,
         .ip = bytecode
     };
 }
 
-interpret_result vm_interpret(uint8_t *bytecode)
+interpret_result vm_rcache_interpret(uint8_t *bytecode)
 {
-    vm_reset(bytecode);
+    vm_rcache_reset(bytecode);
 
     LOAD_REGS();
 
@@ -82,14 +82,14 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_LOADI: {
             /* get the argument, use it to get a value onto stack */
             uint16_t addr = NEXT_ARG();
-            uint64_t val = vm.memory[addr];
+            uint64_t val = vm_rcache.memory[addr];
             PUSH(val);
             break;
         }
         case OP_LOADADDI: {
             /* get the argument, add the value from the address to the top of the stack */
             uint16_t addr = NEXT_ARG();
-            uint64_t val = vm.memory[addr];
+            uint64_t val = vm_rcache.memory[addr];
             TOP() += val;
             break;
         }
@@ -97,19 +97,19 @@ interpret_result vm_interpret(uint8_t *bytecode)
             /* get the argument, use it to get a value of the stack into a memory cell */
             uint16_t addr = NEXT_ARG();
             uint64_t val = POP();
-            vm.memory[addr] = val;
+            vm_rcache.memory[addr] = val;
             break;
         }
         case OP_LOAD: {
             /* pop an address, use it to get a value onto stack */
-            TOP() = vm.memory[TOP()];
+            TOP() = vm_rcache.memory[TOP()];
             break;
         }
         case OP_STORE: {
             /* pop a value, pop an adress, put a value into an address */
             uint64_t val = POP();
             uint16_t addr = POP();
-            vm.memory[addr] = val;
+            vm_rcache.memory[addr] = val;
             break;
         }
         case OP_DUP:{
@@ -210,7 +210,7 @@ interpret_result vm_interpret(uint8_t *bytecode)
         case OP_POP_RES: {
             /* Pop the top of the stack, set it as a result value */
             uint64_t res = POP();
-            vm.result = res;
+            vm_rcache.result = res;
             break;
         }
         case OP_DONE: {
@@ -236,9 +236,9 @@ interpret_result vm_interpret(uint8_t *bytecode)
     return ERROR_END_OF_STREAM;
 }
 
-interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
+interpret_result vm_rcache_interpret_no_range_check(uint8_t *bytecode)
 {
-    vm_reset(bytecode);
+    vm_rcache_reset(bytecode);
 
     LOAD_REGS();
 
@@ -254,14 +254,14 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         case OP_LOADI: {
             /* get the argument, use it to get a value onto stack */
             uint16_t addr = NEXT_ARG();
-            uint64_t val = vm.memory[addr];
+            uint64_t val = vm_rcache.memory[addr];
             PUSH(val);
             break;
         }
         case OP_LOADADDI: {
             /* get the argument, add the value from the address to the top of the stack */
             uint16_t addr = NEXT_ARG();
-            uint64_t val = vm.memory[addr];
+            uint64_t val = vm_rcache.memory[addr];
             TOP() += val;
             break;
         }
@@ -269,19 +269,19 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
             /* get the argument, use it to get a value of the stack into a memory cell */
             uint16_t addr = NEXT_ARG();
             uint64_t val = POP();
-            vm.memory[addr] = val;
+            vm_rcache.memory[addr] = val;
             break;
         }
         case OP_LOAD: {
             /* pop an address, use it to get a value onto stack */
-            TOP() = vm.memory[TOP()];
+            TOP() = vm_rcache.memory[TOP()];
             break;
         }
         case OP_STORE: {
             /* pop a value, pop an adress, put a value into an address */
             uint64_t val = POP();
             uint16_t addr = POP();
-            vm.memory[addr] = val;
+            vm_rcache.memory[addr] = val;
             break;
         }
         case OP_DUP:{
@@ -382,7 +382,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         case OP_POP_RES: {
             /* Pop the top of the stack, set it as a result value */
             uint64_t res = POP();
-            vm.result = res;
+            vm_rcache.result = res;
             break;
         }
         case OP_DONE: {
@@ -408,9 +408,9 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
     return ERROR_END_OF_STREAM;
 }
 
-interpret_result vm_interpret_threaded(uint8_t *bytecode)
+interpret_result vm_rcache_interpret_threaded(uint8_t *bytecode)
 {
-    vm_reset(bytecode);
+    vm_rcache_reset(bytecode);
 
     LOAD_REGS();
 
@@ -454,14 +454,14 @@ op_pushi: {
 op_loadi: {
     /* get the argument, use it to get a value onto stack */
         uint16_t addr = NEXT_ARG();
-        uint64_t val = vm.memory[addr];
+        uint64_t val = vm_rcache.memory[addr];
         PUSH(val);
         goto *labels[NEXT_OP()];
     }
 op_loadaddi: {
         /* get the argument, add the value from the address to the top of the stack */
         uint16_t addr = NEXT_ARG();
-        uint64_t val = vm.memory[addr];
+        uint64_t val = vm_rcache.memory[addr];
         TOP() += val;
         goto *labels[NEXT_OP()];
     }
@@ -469,19 +469,19 @@ op_storei: {
         /* get the argument, use it to get a value of the stack into a memory cell */
         uint16_t addr = NEXT_ARG();
         uint64_t val = POP();
-        vm.memory[addr] = val;
+        vm_rcache.memory[addr] = val;
         goto *labels[NEXT_OP()];
     }
 op_load: {
         /* pop an address, use it to get a value onto stack */
-        TOP() = vm.memory[TOP()];
+        TOP() = vm_rcache.memory[TOP()];
         goto *labels[NEXT_OP()];
     }
 op_store: {
         /* pop a value, pop an adress, put a value into an address */
         uint64_t val = POP();
         uint16_t addr = POP();
-        vm.memory[addr] = val;
+        vm_rcache.memory[addr] = val;
         goto *labels[NEXT_OP()];
     }
 op_dup:{
@@ -582,7 +582,7 @@ op_greater_or_equali:{
 op_pop_res: {
         /* Pop the top of the stack, set it as a result value */
         uint64_t res = POP();
-        vm.result = res;
+        vm_rcache.result = res;
         goto *labels[NEXT_OP()];
     }
 op_done: {
@@ -603,9 +603,9 @@ end:
 }
 
 
-uint64_t vm_get_result(void)
+uint64_t vm_rcache_get_result(void)
 {
-    return vm.result;
+    return vm_rcache.result;
 }
 
 #undef LOAD_REGS
@@ -618,7 +618,7 @@ uint64_t vm_get_result(void)
 #undef TOP
 
 /*
- * trace-based vm interpreter
+ * trace-based vm_rcache interpreter
  * */
 
 #define POP()                                   \
@@ -630,7 +630,7 @@ uint64_t vm_get_result(void)
 #define NEXT_HANDLER(code, stack_top)                      \
     (((code)++), (code)->handler((code), (stack_top)))
 #define END_TRACE(code, stack_top)              \
-    { vm_trace.stack_top = (stack_top); return; }
+    { vm_rcache_trace.stack_top = (stack_top); return; }
 #define ARG_AT_PC(bytecode, pc)                                         \
     (((uint64_t)(bytecode)[(pc) + 1] << 8) + (bytecode)[(pc) + 2])
 
@@ -664,14 +664,14 @@ static struct {
     /* A single register containing the result */
     uint64_t result;
 
-} vm_trace;
+} vm_rcache_trace;
 
 static void op_abort_handler(scode *code, uint64_t *stack_top)
 {
     (void) code;
 
-    vm_trace.is_running = false;
-    vm_trace.error = ERROR_END_OF_STREAM;
+    vm_rcache_trace.is_running = false;
+    vm_rcache_trace.error = ERROR_END_OF_STREAM;
 
     END_TRACE(code, stack_top);
 }
@@ -686,7 +686,7 @@ static void op_pushi_handler(scode *code, uint64_t *stack_top)
 static void op_loadi_handler(scode *code, uint64_t *stack_top)
 {
     uint64_t addr = code->arg;
-    uint64_t val = vm_trace.memory[addr];
+    uint64_t val = vm_rcache_trace.memory[addr];
     PUSH(val);
 
     NEXT_HANDLER(code, stack_top);
@@ -695,7 +695,7 @@ static void op_loadi_handler(scode *code, uint64_t *stack_top)
 static void op_loadaddi_handler(scode *code, uint64_t *stack_top)
 {
     uint64_t addr = code->arg;
-    uint64_t val = vm_trace.memory[addr];
+    uint64_t val = vm_rcache_trace.memory[addr];
     TOP() += val;
 
     NEXT_HANDLER(code, stack_top);
@@ -705,7 +705,7 @@ static void op_storei_handler(scode *code, uint64_t *stack_top)
 {
     uint16_t addr = code->arg;
     uint64_t val = POP();
-    vm_trace.memory[addr] = val;
+    vm_rcache_trace.memory[addr] = val;
 
     NEXT_HANDLER(code, stack_top);
 }
@@ -713,7 +713,7 @@ static void op_storei_handler(scode *code, uint64_t *stack_top)
 static void op_load_handler(scode *code, uint64_t *stack_top)
 {
     uint16_t addr = POP();
-    uint64_t val = vm_trace.memory[addr];
+    uint64_t val = vm_rcache_trace.memory[addr];
     PUSH(val);
 
     NEXT_HANDLER(code, stack_top);
@@ -724,7 +724,7 @@ static void op_store_handler(scode *code, uint64_t *stack_top)
 {
     uint64_t val = POP();
     uint16_t addr = POP();
-    vm_trace.memory[addr] = val;
+    vm_rcache_trace.memory[addr] = val;
 
     NEXT_HANDLER(code, stack_top);
 }
@@ -774,9 +774,9 @@ static void op_div_handler(scode *code, uint64_t *stack_top)
     if (arg_right != 0) {
         TOP() /= arg_right;
     } else {
-        vm_trace.is_running = false;
-        vm_trace.error = ERROR_DIVISION_BY_ZERO;
-        longjmp(vm_trace.buf, 1);
+        vm_rcache_trace.is_running = false;
+        vm_rcache_trace.error = ERROR_DIVISION_BY_ZERO;
+        longjmp(vm_rcache_trace.buf, 1);
     }
 
     NEXT_HANDLER(code, stack_top);
@@ -793,7 +793,7 @@ static void op_mul_handler(scode *code, uint64_t *stack_top)
 static void op_jump_handler(scode *code, uint64_t *stack_top)
 {
     uint64_t target = code->arg;
-    vm_trace.pc = target;
+    vm_rcache_trace.pc = target;
 
     END_TRACE(code, stack_top);
 }
@@ -802,7 +802,7 @@ static void op_jump_if_true_handler(scode *code, uint64_t *stack_top)
 {
     if (POP()) {
         uint64_t target = code->arg;
-        vm_trace.pc = target;
+        vm_rcache_trace.pc = target;
     }
     END_TRACE(code, stack_top);
 }
@@ -811,7 +811,7 @@ static void op_jump_if_false_handler(scode *code, uint64_t *stack_top)
 {
     if (!POP()) {
         uint64_t target = code->arg;
-        vm_trace.pc =  target;
+        vm_rcache_trace.pc =  target;
     }
     END_TRACE(code, stack_top);
 }
@@ -866,7 +866,7 @@ static void op_greater_or_equali_handler(scode *code, uint64_t *stack_top)
 static void op_pop_res_handler(scode *code, uint64_t *stack_top)
 {
     uint64_t res = POP();
-    vm_trace.result = res;
+    vm_rcache_trace.result = res;
 
     NEXT_HANDLER(code, stack_top);
 }
@@ -875,8 +875,8 @@ static void op_done_handler(scode *code, uint64_t *stack_top)
 {
     (void) code;
 
-    vm_trace.is_running = false;
-    vm_trace.error = SUCCESS;
+    vm_rcache_trace.is_running = false;
+    vm_rcache_trace.error = SUCCESS;
 
     END_TRACE(code, stack_top);
 }
@@ -928,22 +928,22 @@ static const trace_opinfo trace_opcode_to_opinfo[] = {
 
 static void trace_tail_handler(scode *code, uint64_t* stack_top)
 {
-    vm_trace.pc = code->arg;
+    vm_rcache_trace.pc = code->arg;
 
     END_TRACE(code, stack_top);
 }
 
 static void trace_prejump_handler(scode *code, uint64_t* stack_top)
 {
-    vm_trace.pc = code->arg;
+    vm_rcache_trace.pc = code->arg;
 
     NEXT_HANDLER(code, stack_top);
 }
 
 static void trace_compile_handler(scode *trace_head, uint64_t *stack_top)
 {
-    uint8_t *bytecode = vm_trace.bytecode;
-    size_t pc = vm_trace.pc;
+    uint8_t *bytecode = vm_rcache_trace.bytecode;
+    size_t pc = vm_rcache_trace.pc;
     size_t trace_size = 0;
 
     const trace_opinfo *info = &trace_opcode_to_opinfo[bytecode[pc]];
@@ -997,32 +997,32 @@ static void trace_compile_handler(scode *trace_head, uint64_t *stack_top)
     trace_head->handler(trace_head, stack_top);
 }
 
-static void vm_trace_reset(uint8_t *bytecode)
+static void vm_rcache_trace_reset(uint8_t *bytecode)
 {
-    vm_trace = (typeof(vm_trace)) {
-        .stack_top = vm_trace.stack,
+    vm_rcache_trace = (typeof(vm_rcache_trace)) {
+        .stack_top = vm_rcache_trace.stack,
         .bytecode = bytecode,
         .is_running = true
     };
     for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
-        vm_trace.trace_cache[trace_i][0].handler = trace_compile_handler;
+        vm_rcache_trace.trace_cache[trace_i][0].handler = trace_compile_handler;
 }
 
-interpret_result vm_interpret_trace(uint8_t *bytecode)
+interpret_result vm_rcache_interpret_trace(uint8_t *bytecode)
 {
-    vm_trace_reset(bytecode);
+    vm_rcache_trace_reset(bytecode);
 
-    if (!setjmp(vm_trace.buf)) {
-        while(vm_trace.is_running) {
-            scode *code = &vm_trace.trace_cache[vm_trace.pc][0];
-            code->handler(code, vm_trace.stack_top);
+    if (!setjmp(vm_rcache_trace.buf)) {
+        while(vm_rcache_trace.is_running) {
+            scode *code = &vm_rcache_trace.trace_cache[vm_rcache_trace.pc][0];
+            code->handler(code, vm_rcache_trace.stack_top);
         }
     }
 
-    return vm_trace.error;
+    return vm_rcache_trace.error;
 }
 
-uint64_t vm_trace_get_result(void)
+uint64_t vm_rcache_trace_get_result(void)
 {
-    return vm_trace.result;
+    return vm_rcache_trace.result;
 }
