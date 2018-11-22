@@ -1,0 +1,2 @@
+#+OPTIONS: ^:nil num:nil p:nil timestamp:nil todo:nil date:nil creator:nil author:nil toc:nil
+#+TITLE: Иголка в стоге сессий, или Байт-код регулярных выражений
