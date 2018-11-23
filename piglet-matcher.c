@@ -27,7 +27,7 @@ static inline uint32_t event_screen(uint32_t event)
     return event >> 16 & 0xff;
 }
 
-match_result matcher_accept(matcher *m, uint32_t event)
+match_result matcher_accept(matcher *m, uint32_t next_event)
 {
 #define NEXT_OP()                               \
     (*m->ip++)
@@ -37,26 +37,30 @@ match_result matcher_accept(matcher *m, uint32_t event)
     for (;;) {
         uint8_t instruction = NEXT_OP();
         switch (instruction) {
-        case OP_ABORT:
+        case OP_ABORT:{
             return MATCH_ERROR;
+        }
         case OP_NAME:{
             uint16_t name = NEXT_ARG();
-            if (event_name(event) != name)
+            if (event_name(next_event) != name)
                 return MATCH_FAIL;
             break;
         }
         case OP_SCREEN:{
             uint16_t screen = NEXT_ARG();
-            if (event_screen(event) != screen)
+            if (event_screen(next_event) != screen)
                 return MATCH_FAIL;
             break;
         }
-        case OP_NEXT:
+        case OP_NEXT:{
             return MATCH_NEXT;
-        case OP_MATCH:
+        }
+        case OP_MATCH:{
             return MATCH_OK;
-        default:
+        }
+        default:{
             return MATCH_ERROR;
+        }
         }
     }
 
