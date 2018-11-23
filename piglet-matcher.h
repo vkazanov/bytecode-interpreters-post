@@ -5,27 +5,27 @@
 
 typedef enum matcher_opcode {
     OP_ABORT,
-    OP_EVENT_NAME,
-    OP_EVENT_SCREEN,
+    OP_NAME,
+    OP_SCREEN,
     OP_NEXT,
     OP_MATCH,
 } matcher_opcode;
 
 typedef enum match_result {
     MATCH_NEXT,
-    MATCH_FOUND,
+    MATCH_OK,
+    MATCH_FAIL,
     MATCH_ERROR,
 } match_result;
 
 typedef struct matcher {
     uint8_t *bytecode;
+    uint8_t *ip;
 } matcher;
 
 matcher *matcher_create(uint8_t *bytecode);
 
-void matcher_reset(void);
-
-match_result matcher_accept(uint32_t event);
+match_result matcher_accept(matcher *m, uint32_t event);
 
 void matcher_destroy(matcher *matcher);
 

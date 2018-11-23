@@ -10,20 +10,58 @@ matcher *matcher_create(uint8_t *bytecode)
         return NULL;
 
     *m = (typeof(*m)) {
-        .bytecode = bytecode
+        .bytecode = bytecode,
+        .ip = &bytecode[0]
     };
 
     return m;
 }
 
-void matcher_reset(void)
+static inline uint32_t event_name(uint32_t event)
 {
-
+    return event & 0xff;
 }
 
-match_result matcher_accept(uint32_t event)
+static inline uint32_t event_screen(uint32_t event)
 {
-    return MATCH_NEXT;
+    return event >> 16 & 0xff;
+}
+
+match_result matcher_accept(matcher *m, uint32_t event)
+{
+#define NEXT_OP()                               \
+    (*m->ip++)
+#define NEXT_ARG()                              \
+    ((void)(m->ip += 2), (m->ip[-2] << 8) + m->ip[-1])
+
+    for (;;) {
+        uint8_t instruction = NEXT_OP();
+        switch (instruction) {
+        case OP_ABORT:
+            return MATCH_ERROR;
+        case OP_NAME:{
+            uint16_t name = NEXT_ARG();
+            if (event_name(event) != name)
+                return MATCH_FAIL;
+            break;
+        }
+        case OP_SCREEN:{
+            uint16_t screen = NEXT_ARG();
+            if (event_screen(event) != screen)
+                return MATCH_FAIL;
+            break;
+        }
+        case OP_NEXT:
+            return MATCH_NEXT;
+        case OP_MATCH:
+            return MATCH_OK;
+        default:
+            return MATCH_ERROR;
+        }
+    }
+
+#undef NEXT_OP
+#undef PEEK_ARG
 }
 
 void matcher_destroy(matcher *m)
