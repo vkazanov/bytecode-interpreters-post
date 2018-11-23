@@ -75,6 +75,24 @@ int main(int argc, char *argv[])
         matcher_destroy(m);
     }
 
+    /* Match multiple events and fail on the last one*/
+    {
+        uint8_t bytecode[] = {
+            OP_NAME, ENCODE_ARG(1), OP_NEXT,
+            OP_NAME, ENCODE_ARG(2), OP_NEXT,
+            OP_NAME, ENCODE_ARG(3), OP_MATCH
+        };
+
+        matcher * m = matcher_create(bytecode);
+        assert(m);
+
+        assert(MATCH_NEXT == matcher_accept(m, make_event(1, 3)));
+        assert(MATCH_NEXT == matcher_accept(m, make_event(2, 3)));
+        assert(MATCH_FAIL == matcher_accept(m, make_event(4, 3)));
+
+        matcher_destroy(m);
+    }
+
     return 0;
 
 #undef ENCODE_ARG
