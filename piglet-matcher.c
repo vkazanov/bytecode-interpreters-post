@@ -67,6 +67,7 @@ match_result matcher_accept(matcher *m, uint32_t next_event)
     /* On every event initiate a new thread */
     add_current_thread(m, initial_thread(m));
 
+    /* Walk the list of current active threads and proceed with execution */
     for (size_t thread_i = 0; thread_i < m->current_thread_num; thread_i++ ) {
         matcher_thread current_thread = m->current_threads[thread_i];
 
@@ -75,26 +76,31 @@ match_result matcher_accept(matcher *m, uint32_t next_event)
             uint8_t instruction = NEXT_OP(current_thread);
             switch (instruction) {
             case OP_ABORT:{
+                /* Null instruction, should neven happen */
                 return MATCH_ERROR;
             }
             case OP_NAME:{
                 uint16_t name = NEXT_ARG(current_thread);
+                /* No match, done with this thread */
                 if (event_name(next_event) != name)
                     thread_done = true;
                 break;
             }
             case OP_SCREEN:{
                 uint16_t screen = NEXT_ARG(current_thread);
+                /* No match, done with this thread */
                 if (event_screen(next_event) != screen)
                     thread_done = true;
                 break;
             }
             case OP_NEXT:{
+                /* Only process the next event if everything was ok previously */
                 add_next_thread(m, current_thread);
                 thread_done = true;
                 break;
             }
             case OP_MATCH:{
+                /* Found a full match, report as OK */
                 return MATCH_OK;
             }
             default:{
