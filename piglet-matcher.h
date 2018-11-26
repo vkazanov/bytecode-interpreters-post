@@ -18,7 +18,6 @@ typedef enum matcher_opcode {
 typedef enum match_result {
     MATCH_NEXT,
     MATCH_OK,
-    MATCH_FAIL,
     MATCH_ERROR,
 } match_result;
 
