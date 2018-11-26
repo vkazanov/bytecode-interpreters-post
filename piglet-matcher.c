@@ -57,6 +57,11 @@ static inline matcher_thread initial_thread(matcher *m)
     return (matcher_thread){ .ip = &m->bytecode[0]};
 }
 
+static inline matcher_thread create_thread(matcher *m, uint16_t offset)
+{
+    return (matcher_thread){ .ip = &m->bytecode[offset]};
+}
+
 match_result matcher_accept(matcher *m, uint32_t next_event)
 {
 #define NEXT_OP(thread)                         \
@@ -99,6 +104,20 @@ match_result matcher_accept(matcher *m, uint32_t next_event)
                 thread_done = true;
                 break;
             }
+            case OP_JUMP:{
+                /* Just continue in the same step by adding a thread with a new offset */
+                uint16_t offset = NEXT_ARG(current_thread);
+                add_current_thread(m, create_thread(m, offset));
+                break;
+            }
+            case OP_SPLIT:{
+                /* Continue in the same step but adding 2 more threads  */
+                uint16_t left_offset = NEXT_ARG(current_thread);
+                uint16_t right_offset = NEXT_ARG(current_thread);
+                add_current_thread(m, create_thread(m, left_offset));
+                add_current_thread(m, create_thread(m, right_offset));
+                break;
+            }
             case OP_MATCH:{
                 /* Found a full match, report as OK */
                 return MATCH_OK;
@@ -117,6 +136,12 @@ match_result matcher_accept(matcher *m, uint32_t next_event)
 
 #undef NEXT_OP
 #undef PEEK_ARG
+}
+
+void matcher_reset(matcher *m)
+{
+    m->current_thread_num = 0;
+    m->next_thread_num = 0;
 }
 
 void matcher_destroy(matcher *m)

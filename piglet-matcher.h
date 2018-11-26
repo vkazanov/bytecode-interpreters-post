@@ -10,6 +10,8 @@ typedef enum matcher_opcode {
     OP_NAME,
     OP_SCREEN,
     OP_NEXT,
+    OP_JUMP,
+    OP_SPLIT,
     OP_MATCH,
 } matcher_opcode;
 
@@ -40,6 +42,8 @@ typedef struct matcher {
 matcher *matcher_create(uint8_t *bytecode);
 
 match_result matcher_accept(matcher *m, uint32_t event);
+
+void matcher_reset(matcher *m);
 
 void matcher_destroy(matcher *matcher);
 
