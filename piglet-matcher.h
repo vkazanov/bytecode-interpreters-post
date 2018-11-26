@@ -3,6 +3,8 @@
 
 #include <inttypes.h>
 
+#define MAX_THREAD_NUM 256
+
 typedef enum matcher_opcode {
     OP_ABORT,
     OP_NAME,
@@ -18,9 +20,21 @@ typedef enum match_result {
     MATCH_ERROR,
 } match_result;
 
+typedef struct matcher_thread {
+    uint8_t *ip;
+} matcher_thread;
+
 typedef struct matcher {
     uint8_t *bytecode;
-    uint8_t *ip;
+
+    /* Threads to be processed using the current event */
+    matcher_thread current_threads[MAX_THREAD_NUM];
+    uint8_t current_thread_num;
+
+    /* Threads to be processed using the event to follow */
+    matcher_thread next_threads[MAX_THREAD_NUM];
+    uint8_t next_thread_num;
+
 } matcher;
 
 matcher *matcher_create(uint8_t *bytecode);
