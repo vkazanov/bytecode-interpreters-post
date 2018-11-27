@@ -20,16 +20,17 @@ typedef struct opinfo {
     bool has_arg;
     char *name;
     bool is_jump;
+    bool is_split;
 } opinfo;
 
 opinfo opcode_to_disinfo[] = {
-    [OP_ABORT] = {0, "ABORT", 0},
-    [OP_NAME] = {1, "NAME", 0},
-    [OP_SCREEN] = {1, "SCREEN", 0},
-    [OP_NEXT] = {1, "NEXT", 0},
-    [OP_JUMP] = {1, "JUMP", 1},
-    [OP_SPLIT] = {0, "SPLIT", 1},
-    [OP_MATCH] = {0, "MATCH", 0},
+    [OP_ABORT] = {0, "ABORT", 0, 0},
+    [OP_NAME] = {1, "NAME", 0, 0},
+    [OP_SCREEN] = {1, "SCREEN", 0, 0},
+    [OP_NEXT] = {0, "NEXT", 0, 0},
+    [OP_JUMP] = {0, "JUMP", 1, 0},
+    [OP_SPLIT] = {0, "SPLIT", 0, 1},
+    [OP_MATCH] = {0, "MATCH", 0, 0},
 };
 
 typedef struct labelinfo {
@@ -39,7 +40,7 @@ typedef struct labelinfo {
 } labelinfo;
 
 typedef struct asm_line {
-    enum kind {OP_KIND, JUMP_KIND, LABEL_KIND} kind;
+    enum kind {OP_KIND, JUMP_KIND, SPLIT_KIND, LABEL_KIND} kind;
     union {
         /* a usual op, with an arg or without it */
         struct op {
@@ -53,6 +54,14 @@ typedef struct asm_line {
             char *label_name;
             uint16_t target_address;
         } jump;
+        /* a jump op, with 2 labels to jump to */
+        struct {
+            uint8_t opcode;
+            char *left_label_name;
+            uint16_t left_target_address;
+            char *right_label_name;
+            uint16_t right_target_address;
+        } split;
         /* a label to be used in jumps */
         struct {
             char *label_name;
@@ -83,6 +92,18 @@ static size_t assemble_line(asm_line *line, uint8_t *bytecode, size_t pc)
         uint16_t target = line->as.jump.target_address;
         bytecode[pc++] = (target & 0xff00) >> 8;
         bytecode[pc++] = (target & 0x00ff);
+        break;
+    }
+    case SPLIT_KIND:{
+        bytecode[pc++] = line->as.split.opcode;
+
+        uint16_t left_target = line->as.split.left_target_address;
+        bytecode[pc++] = (left_target & 0xff00) >> 8;
+        bytecode[pc++] = (left_target & 0x00ff);
+
+        uint16_t right_target = line->as.split.right_target_address;
+        bytecode[pc++] = (right_target & 0xff00) >> 8;
+        bytecode[pc++] = (right_target & 0x00ff);
         break;
     }
     default:{
@@ -125,6 +146,40 @@ static opinfo *opname_to_opcode_info(const char *opname, uint8_t *op)
 
     fprintf(stderr, "Unknown operation name: %s\n", opname);
     exit(EXIT_FAILURE);
+}
+
+static void parse_split_argument(asm_line *parsed_line, char **args_raw)
+{
+    {
+        char *arg = calloc(strlen(args_raw[0]), 1);
+        strip_line(args_raw[0], arg);
+        if (is_label_name(arg)) {
+            parsed_line->as.split.left_label_name = strdup(arg);
+        } else {
+            uint16_t arg_val = 0;
+            if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
+                fprintf(stderr, "Invalid address supplied: %s\n", arg);
+                exit(EXIT_FAILURE);
+            }
+            parsed_line->as.split.left_target_address = arg_val;
+        }
+    }
+
+    {
+        char *arg = calloc(strlen(args_raw[1]), 1);
+        strip_line(args_raw[0], arg);
+        if (is_label_name(arg)) {
+            parsed_line->as.split.right_label_name = strdup(arg);
+        } else {
+            uint16_t arg_val = 0;
+            if (sscanf(arg, "%" SCNu16, &arg_val) != 1) {
+                fprintf(stderr, "Invalid address supplied: %s\n", arg);
+                exit(EXIT_FAILURE);
+            }
+            parsed_line->as.split.right_target_address = arg_val;
+        }
+
+    }
 }
 
 static void parse_jump_argument(asm_line *parsed_line, char *arg_raw)
@@ -223,6 +278,30 @@ static asm_line *parse_line(char *raw_line)
 
                 should_get_arg = false;
             }
+        } else if (info->is_split) {
+            parsed_line->kind = SPLIT_KIND;
+            parsed_line->as.split.opcode = op;
+
+            /* See if there an immediate arg left on the line to be put into bytecode */
+            int args_left = 2;
+            char *raw_args[2] = {0};
+            for (;;) {
+                char *arg = strtok_r(NULL, " ", &saveptr);
+                if (!arg && args_left) {
+                    fprintf(stderr, "Not enough arguments supplied: %s\n", raw_line);
+                    exit(EXIT_FAILURE);
+                } else if (arg && !args_left) {
+                    fprintf(stderr, "Too many arguments supplied: %s\n", raw_line);
+                    exit(EXIT_FAILURE);
+                } else if (!arg && !args_left) {
+                    /* This is fine */
+                    break;
+                }
+                args_left--;
+                raw_args[args_left] = arg;
+            }
+
+            parse_split_argument(parsed_line, raw_args);
         } else {
             parsed_line->kind = OP_KIND;
             parsed_line->as.op.opcode = op;
@@ -276,6 +355,10 @@ static void collect_labelinfo(asm_line *line_list, labelinfo **list)
             pc += 3;
             break;
         }
+        case SPLIT_KIND:{
+            pc += 5;
+            break;
+        }
         default:{
             fprintf(stderr, "Unknown kind: %d\n", line->kind);;
             exit(EXIT_FAILURE);
@@ -284,31 +367,47 @@ static void collect_labelinfo(asm_line *line_list, labelinfo **list)
     }
 }
 
+static labelinfo *find_labelinfo(char *target_label_name, labelinfo *labelinfo_list)
+{
+    labelinfo *target_info = NULL;
+    for (target_info = labelinfo_list; target_info; target_info = target_info->next)
+        if (strcmp(target_label_name, target_info->name) == 0)
+            break;
+
+    if (!target_info) {
+        fprintf(stderr, "Cannot resolve a label: %s\n", target_label_name);
+        exit(EXIT_FAILURE);
+    }
+
+    return target_info;
+}
+
 static void resolve_jumps(asm_line *line_list, labelinfo *labelinfo_list)
 {
     /* Look for jumps and get label addresses for 'em */
+    /* NOTE: only resolve jumps that have labels as addresses */
     for (asm_line *line = line_list; line; line = line->next) {
-        if (line->kind != JUMP_KIND)
-            continue;
+        if (line->kind == JUMP_KIND) {
+            if (line->as.jump.label_name) {
+                labelinfo *target_info =
+                    find_labelinfo(line->as.jump.label_name, labelinfo_list);
+                line->as.jump.target_address = target_info->address;
+            }
+        } else if (line->kind == SPLIT_KIND) {
+            if (line->as.split.left_label_name) {
+                labelinfo *target_info =
+                    find_labelinfo(line->as.split.left_label_name,
+                                   labelinfo_list);
+                line->as.split.left_target_address = target_info->address;
+            }
+            if (line->as.split.right_label_name) {
+                labelinfo *target_info =
+                    find_labelinfo(line->as.split.right_label_name,
+                                   labelinfo_list);
+                line->as.split.right_target_address = target_info->address;
+            }
 
-        /* only resolve jumps that have labels as addresses */
-        if (line->as.jump.label_name == NULL)
-            continue;
-
-        /* Search through the list */
-        char *target_label_name = line->as.jump.label_name;
-        labelinfo *target_info = NULL;
-        for (target_info = labelinfo_list; target_info; target_info = target_info->next)
-            if (strcmp(target_label_name, target_info->name) == 0)
-                break;
-
-        /* Did not find anything, fail */
-        if (!target_info) {
-            fprintf(stderr, "Cannot resolve a label: %s\n", target_label_name);
-            exit(EXIT_FAILURE);
         }
-
-        line->as.jump.target_address = target_info->address;
     }
 }
 
@@ -360,13 +459,24 @@ static size_t print_instruction(uint8_t *bytecode, size_t offset)
     printf("%zu ", offset);
     uint8_t op = bytecode[offset++];
     char *op_name = opcode_to_disinfo[op].name;
+
     bool has_arg = opcode_to_disinfo[op].has_arg;
+    bool is_jump = opcode_to_disinfo[op].is_jump;
+    bool is_split = opcode_to_disinfo[op].is_split;
 
     printf("%s", op_name);
-    if (has_arg) {
+    if (has_arg || is_jump) {
         uint16_t arg = bytecode[offset++] << 8;
         arg += bytecode[offset++];
         printf(" %" PRIu16, arg);
+    }  else if (is_split) {
+        uint16_t left_arg = bytecode[offset++] << 8;
+        left_arg += bytecode[offset++];
+
+        uint16_t right_arg = bytecode[offset++] << 8;
+        right_arg += bytecode[offset++];
+
+        printf(" %" PRIu16 " %" PRIu16, left_arg, right_arg);
     }
     printf("\n");
 
@@ -435,8 +545,6 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Usage: asm <path/to/asm> <path/to/output/bytecode>\n");
             exit(EXIT_FAILURE);
         }
-        /* TODO: asm */
-
         const char *input_path = argv[2];
         const char *output_path = argv[3];
 
@@ -463,8 +571,6 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Usage: dis <path/to/bytecode>\n");
             exit(EXIT_FAILURE);
         }
-        /* TODO: dis */
-
         const char *path = argv[2];
         uint8_t *bytecode = read_file(path);
 

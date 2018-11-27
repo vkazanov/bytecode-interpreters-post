@@ -345,7 +345,7 @@ static asm_line *parse_line(char *raw_line)
 
                 should_get_arg = false;
             }
-        } else {
+        }  else {
             parsed_line->kind = OP_KIND;
             parsed_line->as.op.opcode = op;
             parsed_line->as.op.has_arg = info->has_arg;
