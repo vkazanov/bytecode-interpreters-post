@@ -151,8 +151,8 @@ static opinfo *opname_to_opcode_info(const char *opname, uint8_t *op)
 static void parse_split_argument(asm_line *parsed_line, char **args_raw)
 {
     {
-        char *arg = calloc(strlen(args_raw[0]), 1);
-        strip_line(args_raw[0], arg);
+        char *arg = calloc(strlen(args_raw[1]), 1);
+        strip_line(args_raw[1], arg);
         if (is_label_name(arg)) {
             parsed_line->as.split.left_label_name = strdup(arg);
         } else {
@@ -166,7 +166,7 @@ static void parse_split_argument(asm_line *parsed_line, char **args_raw)
     }
 
     {
-        char *arg = calloc(strlen(args_raw[1]), 1);
+        char *arg = calloc(strlen(args_raw[0]), 1);
         strip_line(args_raw[0], arg);
         if (is_label_name(arg)) {
             parsed_line->as.split.right_label_name = strdup(arg);
