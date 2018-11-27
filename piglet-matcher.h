@@ -13,6 +13,7 @@ typedef enum matcher_opcode {
     OP_JUMP,
     OP_SPLIT,
     OP_MATCH,
+    OP_NUMBER_OF_OPS,
 } matcher_opcode;
 
 typedef enum match_result {
