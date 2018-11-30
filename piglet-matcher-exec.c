@@ -8,6 +8,7 @@
 
 #define MAX_LINE_LEN 256
 #define MAX_CODE_LEN 4096
+#define MAX_EVENT_LEN 4096
 
 /* static char *error_to_msg[] = { */
 /*     [SUCCESS] = "success", */
@@ -491,7 +492,7 @@ static int disassemble(uint8_t *bytecode)
     return EXIT_SUCCESS;
 }
 
-static uint8_t *read_file(const char *path)
+static uint8_t *read_bytecode_file(const char *path)
 {
     FILE *file = fopen(path, "rb");
     if (!file) {
@@ -520,6 +521,61 @@ static uint8_t *read_file(const char *path)
     return buf;
 }
 
+static inline uint32_t make_event(uint32_t event_name, uint32_t event_screen)
+{
+    return event_screen << 16 | event_name;
+}
+
+static bool parse_event_line(char *raw_line, uint32_t *event)
+{
+    /* Ignore comments and empty lines*/
+    if (raw_line[0] == '#' || raw_line[0] == '\n')
+        return false;
+
+    fprintf(stderr, "DEBUG: parsing \"%s\"\n", raw_line);
+
+    uint32_t event_name = 0;
+    uint32_t screen_name = 0;
+    if (sscanf(raw_line, "%" SCNu32 " %" SCNu32, &event_name, &screen_name) != 2)
+        return 0;
+
+    fprintf(stderr, "DEBUG: parsed e=%u s=%u\n", event_name, screen_name);
+
+    *event = make_event(event_name, screen_name);
+
+    return true;
+}
+
+static uint32_t *read_events_file(const char *path, size_t *event_num)
+{
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        fprintf(stderr, "File does not exist: %s\n", path);
+        exit(EXIT_FAILURE);
+    }
+
+    uint32_t *events = calloc(MAX_EVENT_LEN, sizeof(uint32_t));
+    if (!events) {
+        fprintf(stderr, "Memory allocation failure: %s\n", path);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t event_i = 0;
+    char line_buf[MAX_LINE_LEN];
+    while (fgets(line_buf, MAX_LINE_LEN, file)) {
+        uint32_t event = 0;
+        if (parse_event_line(line_buf, &event)) {
+            events[event_i] = event;
+            event_i++;
+        }
+    }
+    *event_num = event_i;
+
+    fclose(file);
+
+    return events;
+}
+
 static void write_file(const uint8_t *bytecode, const size_t bytecode_len, const char *path)
 {
     FILE *file = fopen(path, "wb");
@@ -528,6 +584,29 @@ static void write_file(const uint8_t *bytecode, const size_t bytecode_len, const
         exit(EXIT_FAILURE);
     }
     fclose(file);
+}
+
+static bool match_events(uint8_t *bytecode, uint32_t *events, size_t event_num)
+{
+    bool res = false;
+    matcher *m = matcher_create(bytecode);
+
+    for (size_t e_i = 0; e_i < event_num; e_i++) {
+        uint32_t event = events[e_i];
+        match_result mresult = matcher_accept(m, event);
+        if (mresult == MATCH_OK) {
+            res = true;
+            break;
+        } else if (mresult == MATCH_ERROR) {
+            fprintf(stderr, "Match error, abort\n");
+            break;
+        } else {
+            /* MATCH_NEXT, i.e. continue */
+        }
+    }
+
+    matcher_destroy(m);
+    return res;
 }
 
 int main(int argc, char *argv[])
@@ -565,14 +644,31 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Usage: run <path/to/bytecode> <path/to/input>\n");
             exit(EXIT_FAILURE);
         }
-        /* TODO: run */
+
+        const char *bytecode_path = argv[2];
+        uint8_t *bytecode = read_bytecode_file(bytecode_path);
+
+        const char *event_path = argv[3];
+        size_t event_num = 0;
+        uint32_t *events = read_events_file(event_path, &event_num);
+
+        if (match_events(bytecode, events, event_num)) {
+            fprintf(stdout, "MATCHED\n");
+            res = EXIT_SUCCESS;
+        } else {
+            fprintf(stdout, "NO MATCH\n");
+            res = EXIT_FAILURE;
+        }
+
+        free(bytecode);
+        free(events);
     } else if (0 == strcmp(cmd, "dis")) {
         if (argc != 3) {
             fprintf(stderr, "Usage: dis <path/to/bytecode>\n");
             exit(EXIT_FAILURE);
         }
         const char *path = argv[2];
-        uint8_t *bytecode = read_file(path);
+        uint8_t *bytecode = read_bytecode_file(path);
 
         res = disassemble(bytecode);
 
