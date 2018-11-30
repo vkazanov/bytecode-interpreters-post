@@ -10,13 +10,6 @@
 #define MAX_CODE_LEN 4096
 #define MAX_EVENT_LEN 4096
 
-/* static char *error_to_msg[] = { */
-/*     [SUCCESS] = "success", */
-/*     [ERROR_DIVISION_BY_ZERO] = "division by zero", */
-/*     [ERROR_UNKNOWN_OPCODE] = "unknown opcode", */
-/*     [ERROR_END_OF_STREAM] = "end of stream", */
-/* }; */
-
 typedef struct opinfo {
     bool has_arg;
     char *name;
@@ -609,7 +602,7 @@ static bool match_events(uint8_t *bytecode, uint32_t *events, size_t event_num)
 int main(int argc, char *argv[])
 {
     if (argc < 3) {
-        fprintf(stderr, "Usage: <asm|dis|run> [arg1 [arg2 ...]]\n");
+        fprintf(stderr, "Usage: <asm|dis|run|asmrun> [arg1 [arg2 ...]]\n");
         exit(EXIT_FAILURE);
     }
 
@@ -659,6 +652,35 @@ int main(int argc, char *argv[])
 
         free(bytecode);
         free(events);
+    } else if (0 == strcmp(cmd, "asmrun")) {
+        if (argc != 4) {
+            fprintf(stderr, "Usage: asmrun <path/to/asm> <path/to/input>\n");
+            exit(EXIT_FAILURE);
+        }
+
+        const char *asm_path = argv[2];
+        size_t bytecode_len = 0;
+        uint8_t *bytecode = calloc(MAX_CODE_LEN, 1);
+        if (!bytecode) {
+            fprintf(stderr, "Failed to allocate memory\n");
+            exit(EXIT_FAILURE);
+        }
+        assemble(asm_path, bytecode, &bytecode_len);
+
+        const char *event_path = argv[3];
+        size_t event_num = 0;
+        uint32_t *events = read_events_file(event_path, &event_num);
+
+        if (match_events(bytecode, events, event_num)) {
+            fprintf(stdout, "MATCHED\n");
+            res = EXIT_SUCCESS;
+        } else {
+            fprintf(stdout, "NO MATCH\n");
+            res = EXIT_FAILURE;
+        }
+
+        free(events);
+        free(bytecode);
     } else if (0 == strcmp(cmd, "dis")) {
         if (argc != 3) {
             fprintf(stderr, "Usage: dis <path/to/bytecode>\n");
