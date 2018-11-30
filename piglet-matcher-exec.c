@@ -536,9 +536,10 @@ static bool parse_event_line(char *raw_line, uint32_t *event)
 
     uint32_t event_name = 0;
     uint32_t screen_name = 0;
-    if (sscanf(raw_line, "%" SCNu32 " %" SCNu32, &event_name, &screen_name) != 2)
+    int res = sscanf(raw_line, "%" SCNu32 " %" SCNu32, &event_name, &screen_name);
+    if ( res < 1 || res > 2) {
         return 0;
-
+    }
     fprintf(stderr, "DEBUG: parsed e=%u s=%u\n", event_name, screen_name);
 
     *event = make_event(event_name, screen_name);

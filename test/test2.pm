@@ -1,11 +1,6 @@
 NAME 1
 NEXT
-SPLIT left right
-left:
 NAME 2
-JUMP done
-right:
+NEXT
 NAME 3
-JUMP done
-done:
 MATCH
