@@ -62,7 +62,8 @@ repeatexp = alt(seq(simpleexp, alt(seq(quant_plus, ast_plus),
                                    seq(quant_star, ast_star),
                                    seq(quant_maybe, ast_maybe))),
                 simpleexp)
-unionexp = seq(repeatexp, opt(seq(some(seq(bar, concatexp)), ast_choice)))
+unionexp = lambda x: unionexp(x)
+unionexp = seq(repeatexp, opt(seq(some(seq(bar, unionexp)), ast_choice)))
 concatexp = group(many(unionexp))
 regexp = seq(many(unionexp), end)
 
@@ -94,7 +95,6 @@ def main():
         return
 
     parsed_ast = parse(args.regexp)
-    print()
     print("AST:")
     from pprint import pprint
     pprint(parsed_ast, indent=2)
