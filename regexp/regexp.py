@@ -24,7 +24,7 @@ ast_op = to(2, lambda p, x: Op(x, pos=p))
 SCREEN_UNSPECIFIED = 0
 ast_screen_unspecified = to(0, lambda: Int(SCREEN_UNSPECIFIED))
 ast_event = to(2, lambda x, y: Event(x[1], y[1], pos=attr(x, "pos")))
-ast_choice = to(1, lambda x: Choice(*x))
+ast_choice = to(2, lambda x, y: Choice(x, y))
 ast_plus = to(1, lambda x: Plus(x))
 ast_star = to(1, lambda x: Star(x))
 ast_maybe = to(1, lambda x: Maybe(x))
@@ -54,14 +54,17 @@ event = seq(event_name,
             alt(seq(colon, event_screen),
                 ast_screen_unspecified),
             ast_event)
-event_choice = alt(
-    seq(group(lparen, list_of(event, bar), rparen), ast_choice),
-    event
-)
-quant_event_choice = seq(event_choice, opt(alt(seq(quant_plus, ast_plus),
-                                               seq(quant_star, ast_star),
-                                               seq(quant_maybe, ast_maybe))))
-event_list = seq(many(quant_event_choice), end)
+
+concatexp = lambda x: concatexp(x)
+parenexp = seq(lparen, concatexp, rparen)
+simpleexp = alt(event, parenexp)
+repeatexp = alt(seq(simpleexp, alt(seq(quant_plus, ast_plus),
+                                   seq(quant_star, ast_star),
+                                   seq(quant_maybe, ast_maybe))),
+                simpleexp)
+unionexp = seq(repeatexp, opt(seq(some(seq(bar, concatexp)), ast_choice)))
+concatexp = group(many(unionexp))
+regexp = seq(many(unionexp), end)
 
 
 def scan(src):
@@ -71,7 +74,7 @@ def scan(src):
 
 def parse(src):
     s = Stream(scan(src))
-    return s.out if event_list(s) else []
+    return s.out if regexp(s) else []
 
 
 def main():
@@ -83,6 +86,7 @@ def main():
 
     scanned_tokens = scan(args.regexp)
     if args.tokens:
+        print("Tokens:")
         for t in scanned_tokens:
             print(t)
 
@@ -90,8 +94,10 @@ def main():
         return
 
     parsed_ast = parse(args.regexp)
+    print()
+    print("AST:")
     from pprint import pprint
-    pprint(parsed_ast)
+    pprint(parsed_ast, indent=2)
 
 
 if __name__ == '__main__':
