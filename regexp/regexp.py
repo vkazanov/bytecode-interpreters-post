@@ -15,6 +15,7 @@ Choice = make_term("Choice")
 Plus = make_term("Plus")
 Star = make_term("Star")
 Maybe = make_term("Maybe")
+Any = make_term("Any")
 
 # AST
 #
@@ -28,6 +29,7 @@ ast_choice = to(2, lambda x, y: Choice(x, y))
 ast_plus = to(1, lambda x: Plus(x))
 ast_star = to(1, lambda x: Star(x))
 ast_maybe = to(1, lambda x: Maybe(x))
+ast_any = to(0, lambda: Any())
 
 # Scanner
 #
@@ -41,6 +43,7 @@ tokens = seq(many(seq(ws, add_pos, alt(operator, integer))), ws, end)
 # Parser
 #
 bar = eat(lambda x: x == ("Op", "|"))
+dot = eat(lambda x: x == ("Op", "."))
 colon = eat(lambda x: x == ("Op", ":"))
 lparen = eat(lambda x: x == ("Op", "("))
 rparen = eat(lambda x: x == ("Op", ")"))
@@ -55,9 +58,10 @@ event = seq(event_name,
                 ast_screen_unspecified),
             ast_event)
 
+anyexp = seq(dot, ast_any)
 concatexp = lambda x: concatexp(x)
 parenexp = seq(lparen, concatexp, rparen)
-simpleexp = alt(event, parenexp)
+simpleexp = alt(event, anyexp, parenexp)
 repeatexp = alt(seq(simpleexp, alt(seq(quant_plus, ast_plus),
                                    seq(quant_star, ast_star),
                                    seq(quant_maybe, ast_maybe))),
