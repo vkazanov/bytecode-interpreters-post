@@ -2,7 +2,7 @@
 import argparse
 
 from raddsl.parse import (
-    seq, a, many, non, space, alt, quote, some, digit, match, end, eat, push, group, Stream, to
+    seq, a, many, non, space, alt, quote, some, digit, match, end, eat, push, group, Stream, to, list_of, opt, empty
 )
 from tools import add_pos, attr, make_term
 
@@ -21,6 +21,7 @@ from tools import add_pos, attr, make_term
 Int = make_term("Int")
 Op = make_term("Op")
 Event = make_term("Event")
+Choice = make_term("Choice")
 
 # AST
 #
@@ -28,8 +29,9 @@ ast_integer = to(2, lambda p, x: Int(int(x), pos=p))
 ast_op = to(2, lambda p, x: Op(x, pos=p))
 
 SCREEN_UNSPECIFIED = 0
-ast_event_with_screen = to(2, lambda x, y: Event(x[1], y[1], pos=attr(x, "pos")))
-ast_event_no_screen = to(1, lambda x: Event(x[1], SCREEN_UNSPECIFIED, pos=attr(x, "pos")))
+ast_screen_unspecified = to(0, lambda: Int(SCREEN_UNSPECIFIED))
+ast_event = to(2, lambda x, y: Event(x[1], y[1], pos=attr(x, "pos")))
+ast_choice = to(1, lambda x: Choice(*x))
 
 # Scanner
 #
@@ -42,12 +44,22 @@ tokens = seq(many(seq(ws, add_pos, alt(operator, integer))), ws, end)
 
 # Parser
 #
+bar = eat(lambda x: x == ("Op", "|"))
 colon = eat(lambda x: x == ("Op", ":"))
+lparen = eat(lambda x: x == ("Op", "("))
+rparen = eat(lambda x: x == ("Op", ")"))
+
 event_name = push(eat(lambda x: x[0] == "Int"))
 event_screen = push(eat(lambda x: x[0] == "Int"))
-event = alt(seq(event_name, colon, event_screen, ast_event_with_screen),
-            seq(event_name, ast_event_no_screen))
-event_list = seq(many(event), end)
+event = seq(event_name,
+            alt(seq(colon, event_screen),
+                ast_screen_unspecified),
+            ast_event)
+event_choice = alt(
+    seq(group(lparen, list_of(event, bar), rparen), ast_choice),
+    event
+)
+event_list = seq(many(event_choice), end)
 
 
 def scan(src):
@@ -76,7 +88,8 @@ def main():
         return
 
     parsed_ast = parse(args.regexp)
-    print(parsed_ast)
+    from pprint import pprint
+    pprint(parsed_ast)
 
 
 if __name__ == '__main__':
