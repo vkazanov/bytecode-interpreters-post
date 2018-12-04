@@ -197,19 +197,36 @@ def translate_recur(ast_node, label_generator, result):
         sys.exit(1)
 
 
+def dump_asm(linear_ast):
+    for node in linear_ast:
+        head = node[0]
+
+        if ":" in head:
+            # a label
+            print(head)
+        else:
+            # Everything else is simple
+            print(" ".join(str(n) for n in node))
+
+
 def main():
     argparser = argparse.ArgumentParser(description="Piglet Matcher Regexp Compiler")
     argparser.add_argument("regexp", help="Regular expression to parse")
+
     argparser.add_argument("--dump-tokens", action="store_true", help="Dump scanned tokens")
     argparser.add_argument("--dump-ast", action="store_true", help="Dump AST")
+    argparser.add_argument("--dump-linear", action="store_true", help="Dump linear AST")
+
     argparser.add_argument("--scan-only", action="store_true", help="Only do scanning")
     argparser.add_argument("--ast-only", action="store_true", help="Only do scanning/parsing")
+    argparser.add_argument("--linear-only", action="store_true", help="Only do scanning/parsing/flattening")
+
     args = argparser.parse_args()
 
     scanned_tokens = scan(args.regexp)
     if args.dump_tokens:
         print("Tokens:")
-        pprint(scanned_tokens, indent=2)
+        pprint(scanned_tokens, indent=2, stream=sys.stderr)
 
     if args.scan_only:
         return
@@ -217,15 +234,21 @@ def main():
     parsed_ast = parse(scanned_tokens)
     if args.dump_ast:
         print("AST:")
-        pprint(parsed_ast, indent=2)
+        pprint(parsed_ast, indent=2, stream=sys.stderr)
 
     if args.ast_only:
         return
 
     # TODO: adhoc shit below, to be replaced with proper code
-    bytecode = translate(parsed_ast)
-    print("Bytecode:")
-    pprint(bytecode)
+    linear_ast = translate(parsed_ast)
+    if args.dump_linear:
+        print("Linear code:")
+        pprint(linear_ast, indent=2, stream=sys.stderr)
+
+    if args.linear_only:
+        return
+
+    dump_asm(linear_ast)
 
 
 if __name__ == '__main__':
