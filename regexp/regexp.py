@@ -104,22 +104,16 @@ def parse(src):
         sys.exit(1)
 
 
-def label_name_generator():
-    label_i = 0
-    while True:
-        yield "L" + str(label_i)
-        label_i += 1
-
-
 def translate(ast_node):
     result = []
     label_generator = label_name_generator()
     translate_recur(ast_node, label_generator, result)
-    result.append(("MATCH", ))
+    emit_op(result, "MATCH")
     return result
 
 
 def translate_recur(ast_node, label_generator, result):
+
     # Just flatten lists
     if isinstance(ast_node, list):
         for child_node in ast_node:
@@ -132,13 +126,13 @@ def translate_recur(ast_node, label_generator, result):
         # Event is matched by it's name and also an optional screen
         _, name, screen = ast_node
 
-        result.append(("NAME", name))
+        emit_op(result, "NAME", name)
         if screen != SCREEN_UNSPECIFIED:
-            result.append(("SCREEN", screen))
-        result.append(("NEXT", ))
+            emit_op(result, "SCREEN", screen)
+        emit_op(result, "NEXT")
     elif node_head == "Any":
         # Just skip no matter what the event is
-        result.append(("NEXT", ))
+        emit_op(result, "NEXT")
     elif node_head == "Maybe":
         # Optional event sequence
         _, optional_sequence = ast_node
@@ -146,10 +140,10 @@ def translate_recur(ast_node, label_generator, result):
         yes_label = next(label_generator)
         done_label = next(label_generator)
 
-        result.append(("SPLIT", yes_label, done_label))
-        result.append((yes_label + ":", ))
+        emit_op(result, "SPLIT", yes_label, done_label)
+        emit_label(result, yes_label)
         translate_recur(optional_sequence, label_generator, result)
-        result.append((done_label + ":", ))
+        emit_label(result, done_label)
     elif node_head == "Choice":
         # Choice of event sequences, i.e. one of the two options can be present
         _, left_sequence, right_sequence = ast_node
@@ -157,15 +151,15 @@ def translate_recur(ast_node, label_generator, result):
         right_label = next(label_generator)
         done_label = next(label_generator)
 
-        result.append(("SPLIT", left_label, right_label))
+        emit_op(result, "SPLIT", left_label, right_label)
 
-        result.append((left_label + ":", ))
+        emit_label(result, left_label)
         translate_recur(left_sequence, label_generator, result)
-        result.append(("JUMP", done_label))
+        emit_op(result, "JUMP", done_label)
 
-        result.append((right_label + ":", ))
+        emit_label(result, right_label)
         translate_recur(right_sequence, label_generator, result)
-        result.append((done_label + ":", ))
+        emit_label(result, done_label)
     elif node_head == "Plus":
         # Plus means that we should match at least one event of the type specified
         _, repeated_sequence = ast_node
@@ -173,12 +167,12 @@ def translate_recur(ast_node, label_generator, result):
         done_label = next(label_generator)
 
         # One sequence should always be matched
-        result.append((repeat_label + ":", ))
+        emit_label(result, repeat_label)
         translate_recur(repeated_sequence, label_generator, result)
 
         # Now, the repeating part
-        result.append(("SPLIT", repeat_label, done_label))
-        result.append((done_label + ":", ))
+        emit_op(result, "SPLIT", repeat_label, done_label)
+        emit_label(result, done_label)
     elif node_head == "Star":
         # Any number of sequences
         _, repeated_sequence = ast_node
@@ -186,15 +180,30 @@ def translate_recur(ast_node, label_generator, result):
         match_label = next(label_generator)
         done_label = next(label_generator)
 
-        result.append((repeat_label + ":", ))
-        result.append(("SPLIT", match_label, done_label))
-        result.append((match_label + ":", ))
+        emit_label(result, repeat_label)
+        emit_op(result, "SPLIT", match_label, done_label)
+        emit_label(result, match_label)
         translate_recur(repeated_sequence, label_generator, result)
-        result.append(("JUMP", repeat_label))
-        result.append((done_label + ":", ))
+        emit_op(result, "JUMP", repeat_label)
+        emit_label(result, done_label)
     else:
         print("Unknown node type: {}", ast_node, file=sys.stderr)
         sys.exit(1)
+
+
+def emit_op(result, opname, *args):
+    result.append((opname, *args))
+
+
+def emit_label(result, label_name):
+    result.append((label_name + ":", ))
+
+
+def label_name_generator():
+    label_i = 0
+    while True:
+        yield "L" + str(label_i)
+        label_i += 1
 
 
 def dump_asm(linear_ast):
