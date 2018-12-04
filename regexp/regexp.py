@@ -168,12 +168,30 @@ def translate_recur(ast_node, label_generator, result):
         result.append((done_label + ":", ))
     elif node_head == "Plus":
         # Plus means that we should match at least one event of the type specified
-        # TODO:
-        pass
+        _, repeated_sequence = ast_node
+        repeat_label = next(label_generator)
+        done_label = next(label_generator)
+
+        # One sequence should always be matched
+        result.append((repeat_label + ":", ))
+        translate_recur(repeated_sequence, label_generator, result)
+
+        # Now, the repeating part
+        result.append(("SPLIT", repeat_label, done_label))
+        result.append((done_label + ":", ))
     elif node_head == "Star":
-        # Any number of events
-        # TODO:
-        pass
+        # Any number of sequences
+        _, repeated_sequence = ast_node
+        repeat_label = next(label_generator)
+        match_label = next(label_generator)
+        done_label = next(label_generator)
+
+        result.append((repeat_label + ":", ))
+        result.append(("SPLIT", match_label, done_label))
+        result.append((match_label + ":", ))
+        translate_recur(repeated_sequence, label_generator, result)
+        result.append(("JUMP", repeat_label))
+        result.append((done_label + ":", ))
     else:
         print("Unknown node type: {}", ast_node, file=sys.stderr)
         sys.exit(1)
@@ -206,6 +224,7 @@ def main():
 
     # TODO: adhoc shit below, to be replaced with proper code
     bytecode = translate(parsed_ast)
+    print("Bytecode:")
     pprint(bytecode)
 
 
