@@ -104,13 +104,88 @@ def parse(src):
         sys.exit(1)
 
 
+def label_name_generator():
+    label_i = 0
+    while True:
+        yield "L" + str(label_i)
+        label_i += 1
+
+
+def translate(ast_node):
+    result = []
+    label_generator = label_name_generator()
+    translate_recur(ast_node, label_generator, result)
+    result.append(("MATCH", ))
+    return result
+
+
+def translate_recur(ast_node, label_generator, result):
+    # Just flatten lists
+    if isinstance(ast_node, list):
+        for child_node in ast_node:
+            translate_recur(child_node, label_generator, result)
+        return
+
+    # Handle proper nodes
+    node_head = ast_node[0]
+    if node_head == "Event":
+        # Event is matched by it's name and also an optional screen
+        _, name, screen = ast_node
+
+        result.append(("NAME", name))
+        if screen != SCREEN_UNSPECIFIED:
+            result.append(("SCREEN", screen))
+        result.append(("NEXT", ))
+    elif node_head == "Any":
+        # Just skip no matter what the event is
+        result.append(("NEXT", ))
+    elif node_head == "Maybe":
+        # Optional event sequence
+        _, optional_sequence = ast_node
+
+        yes_label = next(label_generator)
+        done_label = next(label_generator)
+
+        result.append(("SPLIT", yes_label, done_label))
+        result.append((yes_label + ":", ))
+        translate_recur(optional_sequence, label_generator, result)
+        result.append((done_label + ":", ))
+    elif node_head == "Choice":
+        # Choice of event sequences, i.e. one of the two options can be present
+        _, left_sequence, right_sequence = ast_node
+        left_label = next(label_generator)
+        right_label = next(label_generator)
+        done_label = next(label_generator)
+
+        result.append(("SPLIT", left_label, right_label))
+
+        result.append((left_label + ":", ))
+        translate_recur(left_sequence, label_generator, result)
+        result.append(("JUMP", done_label))
+
+        result.append((right_label + ":", ))
+        translate_recur(right_sequence, label_generator, result)
+        result.append((done_label + ":", ))
+    elif node_head == "Plus":
+        # Plus means that we should match at least one event of the type specified
+        # TODO:
+        pass
+    elif node_head == "Star":
+        # Any number of events
+        # TODO:
+        pass
+    else:
+        print("Unknown node type: {}", ast_node, file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     argparser = argparse.ArgumentParser(description="Piglet Matcher Regexp Compiler")
     argparser.add_argument("regexp", help="Regular expression to parse")
     argparser.add_argument("--dump-tokens", action="store_true", help="Dump scanned tokens")
     argparser.add_argument("--dump-ast", action="store_true", help="Dump AST")
-    argparser.add_argument("--scan-only", action="store_true", help="Only perform scanning")
-    argparser.add_argument("--ast-only", action="store_true", help="Only perform scanning/parsing")
+    argparser.add_argument("--scan-only", action="store_true", help="Only do scanning")
+    argparser.add_argument("--ast-only", action="store_true", help="Only do scanning/parsing")
     args = argparser.parse_args()
 
     scanned_tokens = scan(args.regexp)
@@ -128,6 +203,10 @@ def main():
 
     if args.ast_only:
         return
+
+    # TODO: adhoc shit below, to be replaced with proper code
+    bytecode = translate(parsed_ast)
+    pprint(bytecode)
 
 
 if __name__ == '__main__':
