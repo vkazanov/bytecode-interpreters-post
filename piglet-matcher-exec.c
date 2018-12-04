@@ -581,6 +581,9 @@ static bool match_events(uint8_t *bytecode, uint32_t *events, size_t event_num)
     bool res = false;
     matcher *m = matcher_create(bytecode);
 
+    /* Always need to init the matcher with an empty start event */
+    matcher_accept(m, 0);
+
     for (size_t e_i = 0; e_i < event_num; e_i++) {
         uint32_t event = events[e_i];
         match_result mresult = matcher_accept(m, event);
