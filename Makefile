@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -std=gnu11 -O3 -g
 
-INTERPRETERS = basic-switch immediate-arg stack-machine register-machine regexp
+INTERPRETERS = basic-switch immediate-arg stack-machine register-machine
 
 all: $(INTERPRETERS) pigletvm piglet-matcher
 

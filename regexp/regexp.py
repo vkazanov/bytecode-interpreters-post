@@ -225,7 +225,7 @@ def main():
 
     scanned_tokens = scan(args.regexp)
     if args.dump_tokens:
-        print("Tokens:")
+        print("Tokens:", file=sys.stderr)
         pprint(scanned_tokens, indent=2, stream=sys.stderr)
 
     if args.scan_only:
@@ -233,7 +233,7 @@ def main():
 
     parsed_ast = parse(scanned_tokens)
     if args.dump_ast:
-        print("AST:")
+        print("AST:", file=sys.stderr)
         pprint(parsed_ast, indent=2, stream=sys.stderr)
 
     if args.ast_only:
@@ -242,7 +242,7 @@ def main():
     # TODO: adhoc shit below, to be replaced with proper code
     linear_ast = translate(parsed_ast)
     if args.dump_linear:
-        print("Linear code:")
+        print("Linear code:", file=sys.stderr)
         pprint(linear_ast, indent=2, stream=sys.stderr)
 
     if args.linear_only:
