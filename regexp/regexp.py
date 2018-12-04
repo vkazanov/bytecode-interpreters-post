@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import sys
+from pprint import pprint
 
 from raddsl.parse import (
     seq, a, many, non, space, alt, quote, some, digit, match, end, eat, push, group, Stream, to, opt
@@ -96,13 +97,14 @@ def parse(src):
 def main():
     argparser = argparse.ArgumentParser(description="Piglet Matcher Regexp Compiler")
     argparser.add_argument("regexp", help="Regular expression to parse")
+    argparser.add_argument("--dump-tokens", action="store_true", help="Dump scanned tokens")
+    argparser.add_argument("--dump-ast", action="store_true", help="Dump AST")
     argparser.add_argument("--scan-only", action="store_true", help="Only perform scanning")
-    argparser.add_argument("--tokens", action="store_true", help="Dump scanned tokens")
+    argparser.add_argument("--ast-only", action="store_true", help="Only perform scanning/parsing")
     args = argparser.parse_args()
 
     scanned_tokens = scan(args.regexp)
-    from pprint import pprint
-    if args.tokens:
+    if args.dump_tokens:
         print("Tokens:")
         pprint(scanned_tokens, indent=2)
 
@@ -110,8 +112,12 @@ def main():
         return
 
     parsed_ast = parse(scanned_tokens)
-    print("AST:")
-    pprint(parsed_ast, indent=2)
+    if args.dump_ast:
+        print("AST:")
+        pprint(parsed_ast, indent=2)
+
+    if args.ast_only:
+        return
 
 
 if __name__ == '__main__':
