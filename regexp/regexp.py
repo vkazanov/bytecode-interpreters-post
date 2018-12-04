@@ -208,14 +208,7 @@ def label_name_generator():
 
 def dump_asm(linear_ast):
     for node in linear_ast:
-        head = node[0]
-
-        if ":" in head:
-            # a label
-            print(head)
-        else:
-            # Everything else is simple
-            print(" ".join(str(n) for n in node))
+        print(" ".join(map(str, node)))
 
 
 def main():
