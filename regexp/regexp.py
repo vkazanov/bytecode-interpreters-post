@@ -10,8 +10,12 @@ from tools import add_pos, attr, make_term
 
 # Terms
 #
+
+# scan result terms
 Int = make_term("Int")
 Op = make_term("Op")
+
+# AST terms
 Event = make_term("Event")
 Choice = make_term("Choice")
 Plus = make_term("Plus")
@@ -19,8 +23,9 @@ Star = make_term("Star")
 Maybe = make_term("Maybe")
 Any = make_term("Any")
 
-# AST
+# AST node generation
 #
+
 ast_integer = to(2, lambda p, x: Int(int(x), pos=p))
 ast_op = to(2, lambda p, x: Op(x, pos=p))
 
@@ -35,6 +40,7 @@ ast_any = to(0, lambda: Any())
 
 # Scanner
 #
+
 comment = seq(a("#"), many(non(a("\n"))))
 ws = many(alt(space, comment))
 integer = seq(quote(some(digit)), ast_integer)
@@ -44,6 +50,8 @@ tokens = seq(many(seq(ws, add_pos, alt(operator, integer))), ws, end)
 
 # Parser
 #
+
+# ops
 bar = eat(lambda x: x == ("Op", "|"))
 dot = eat(lambda x: x == ("Op", "."))
 colon = eat(lambda x: x == ("Op", ":"))
@@ -53,10 +61,12 @@ quant_plus = eat(lambda x: x == ("Op", "+"))
 quant_star = eat(lambda x: x == ("Op", "*"))
 quant_maybe = eat(lambda x: x == ("Op", "?"))
 
-event_name = push(eat(lambda x: x[0] == "Int"))
-event_screen = push(eat(lambda x: x[0] == "Int"))
-eventexp = seq(event_name,
-               alt(seq(colon, event_screen),
+nameexp = push(eat(lambda x: x[0] == "Int"))
+screenexp = push(eat(lambda x: x[0] == "Int"))
+
+# non-terminals
+eventexp = seq(nameexp,
+               alt(seq(colon, screenexp),
                    ast_screen_unspecified),
                ast_event)
 
