@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import argparse
+import sys
 
 from raddsl.parse import (
-    seq, a, many, non, space, alt, quote, some, digit, match, end, eat, push, group, Stream, to, list_of, opt, empty
+    seq, a, many, non, space, alt, quote, some, digit, match, end, eat, push, group, Stream, to, opt
 )
 from tools import add_pos, attr, make_term
 
@@ -74,12 +75,22 @@ regexp = seq(many(unionexp), end)
 
 def scan(src):
     s = Stream(src)
-    return s.out if tokens(s) else []
+    if tokens(s):
+        return s.out
+    else:
+        print("Failed to scan (error_pos={}, char={})".format(s.error_pos, s.buf[s.error_pos]),
+              file=sys.stderr)
+        sys.exit(1)
 
 
 def parse(src):
-    s = Stream(scan(src))
-    return s.out if regexp(s) else []
+    s = Stream(src)
+    if regexp(s):
+        return s.out
+    else:
+        print("Failed to parse (error_pos={}, tok={})".format(s.error_pos, s.buf[s.error_pos]),
+              file=sys.stderr)
+        sys.exit(1)
 
 
 def main():
@@ -90,17 +101,16 @@ def main():
     args = argparser.parse_args()
 
     scanned_tokens = scan(args.regexp)
+    from pprint import pprint
     if args.tokens:
         print("Tokens:")
-        for t in scanned_tokens:
-            print(t)
+        pprint(scanned_tokens, indent=2)
 
     if args.scan_only:
         return
 
-    parsed_ast = parse(args.regexp)
+    parsed_ast = parse(scanned_tokens)
     print("AST:")
-    from pprint import pprint
     pprint(parsed_ast, indent=2)
 
 
