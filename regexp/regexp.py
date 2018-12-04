@@ -53,15 +53,15 @@ quant_maybe = eat(lambda x: x == ("Op", "?"))
 
 event_name = push(eat(lambda x: x[0] == "Int"))
 event_screen = push(eat(lambda x: x[0] == "Int"))
-event = seq(event_name,
-            alt(seq(colon, event_screen),
-                ast_screen_unspecified),
-            ast_event)
+eventexp = seq(event_name,
+               alt(seq(colon, event_screen),
+                   ast_screen_unspecified),
+               ast_event)
 
 anyexp = seq(dot, ast_any)
 concatexp = lambda x: concatexp(x)
 parenexp = seq(lparen, concatexp, rparen)
-simpleexp = alt(event, anyexp, parenexp)
+simpleexp = alt(eventexp, anyexp, parenexp)
 repeatexp = alt(seq(simpleexp, alt(seq(quant_plus, ast_plus),
                                    seq(quant_star, ast_star),
                                    seq(quant_maybe, ast_maybe))),
