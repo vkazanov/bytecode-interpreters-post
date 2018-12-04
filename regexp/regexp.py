@@ -126,10 +126,10 @@ def translate_recur(ast_node, label_generator, result):
         # Event is matched by it's name and also an optional screen
         _, name, screen = ast_node
 
+        emit_op(result, "NEXT")
         emit_op(result, "NAME", name)
         if screen != SCREEN_UNSPECIFIED:
             emit_op(result, "SCREEN", screen)
-        emit_op(result, "NEXT")
     elif node_head == "Any":
         # Just skip no matter what the event is
         emit_op(result, "NEXT")
