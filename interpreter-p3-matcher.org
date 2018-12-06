@@ -148,11 +148,121 @@
 
   Пример из первой части серии статей, в сущности, имитирует перезапуск сопоставления при помощи
   отката (англ. backtracking). Код в примере выглядит, конечно, чище приведенного здесь, но суть
-  проблемы не меняется - каждое из событий мы должны посмотреть многократно.
+  проблемы не меняется: каждое из событий мы должны посмотреть многократно.
 
   Так жить решительно нельзя.
 
-* TODO Я, еще раз я и снова я
+* DONE Я, еще раз я и снова я
+
+  Давайте еще раз проговорим задачу: надо сопоставлять шаблон со входящими событиями, от каждого из
+  событий начиная новое сопоставление. Так почему бы нам именно это и не делать? Пускай виртуальная
+  машина будет идти по входящим событиям в несколько /потоков/!
+
+  Для этого нам потребуется завести новую сущность - поток. Каждый поток хранит единственный
+  указатель на текущую инструкцию:
+
+  #+BEGIN_SRC cpp
+
+    typedef struct matcher_thread {
+        uint8_t *ip;
+    } matcher_thread;
+
+  #+END_SRC
+
+  Естественно, что и в самой виртуальной машине мы теперь явный указатель хранить не будем. Его
+  заменяют два списка потоков (о них чуть ниже):
+
+  #+BEGIN_SRC cpp
+
+    typedef struct matcher {
+        uint8_t *bytecode;
+
+        /* Threads to be processed using the current event */
+        matcher_thread current_threads[MAX_THREAD_NUM];
+        uint8_t current_thread_num;
+
+        /* Threads to be processed using the event to follow */
+        matcher_thread next_threads[MAX_THREAD_NUM];
+        uint8_t next_thread_num;
+
+    } matcher;
+
+  #+END_SRC
+
+  А вот и обновленный главный цикл:
+
+  #+BEGIN_SRC cpp
+    match_result matcher_accept(matcher *m, uint32_t next_event)
+    {
+    #define NEXT_OP(thread)                         \
+        (*(thread).ip++)
+    #define NEXT_ARG(thread)                                                \
+        ((void)((thread).ip += 2), ((thread).ip[-2] << 8) + (thread).ip[-1])
+
+        /* Каждое полученное событие запускает новый поток с начала байт-кода */
+        add_current_thread(m, initial_thread(m));
+
+        // На полученное событие мы обрабатываем каждый из потоков
+        for (size_t thread_i = 0; thread_i < m->current_thread_num; thread_i++ ) {
+            matcher_thread current_thread = m->current_threads[thread_i];
+
+            bool thread_done = false;
+            while (!thread_done) {
+                uint8_t instruction = NEXT_OP(current_thread);
+                switch (instruction) {
+                case OP_ABORT:{
+                    return MATCH_ERROR;
+                }
+                case OP_NAME:{
+                    uint16_t name = NEXT_ARG(current_thread);
+                    // если выясняется, что текущее событие не соответствует шаблону, то текущий поток
+                    // не помещается в список next_threads, и завершает выполнение
+                    if (event_name(next_event) != name)
+                        thread_done = true;
+                    break;
+                }
+                case OP_SCREEN:{
+                    uint16_t screen = NEXT_ARG(current_thread);
+                    if (event_screen(next_event) != screen)
+                        thread_done = true;
+                    break;
+                }
+                case OP_NEXT:{
+                    // поток запросил следующее событие, т.е. должен быть помещен в список next_threads
+                    add_next_thread(m, current_thread);
+                    thread_done = true;
+                    break;
+                }
+                case OP_MATCH:{
+                    return MATCH_OK;
+                }
+                default:{
+                    return MATCH_ERROR;
+                }
+                }
+            }
+        }
+
+        /* Меняем местами текущий и следующий списки, запрашиваем следующее событие */
+        swap_current_and_next(m);
+        return MATCH_NEXT;
+
+    #undef NEXT_OP
+    #undef PEEK_ARG
+    }
+
+  #+END_SRC
+
+  На каждом полученном событии мы обходим список current_threads, выполняя сопоставляющие шаблон
+  инструкции. Если встречается инструкция NEXT, то поток помещается в список next_threads, то есть
+  ждет получения следующей инструкции. Если шаблон в одном из потоков не совпадает с полученным
+  событием, то такой поток просто не добавляется в список следующих инструкций. Инструкция MATCH
+  просто немедленно рапортует о наличии шаблона в сопоставляемой сессии. По завершению обхода списка
+  текущих потоков текущий и следующий списки меняются местами.
+
+  Это, собственно, все. Можно сказать, что мы буквально делаем то, хотели: параллельно сверяем
+  несколько шаблонов с каждым из входящих событий.
+
 * TODO Множественные личности и ветвления в шаблонах
 * TODO Регулярные выражения на событиях
 * TODO Заключение
