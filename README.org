@@ -87,4 +87,4 @@ implement a proper language compiled into PigletmVM assembler: [[https://github.
 * PigletMatcher, event sequence matcher.
 
 PigletMatcher is a regular expression engine defined for event sequences. It comes in two pieces: the
-virtual machine itself and a parser based on the same tool that was used for PigletC.
+[[file:piglet-matcher.h][virtual machine itself]] and [[file:regexp/regexp.py][a parser]] based on the same tool that was used for PigletC.
