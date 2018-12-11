@@ -13,18 +13,20 @@ make test
 Articles:
 
 1. DIY bytecode interpreters ([[file:interpreter-p1.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/425325/][published in Russian]])
-2. The Flight of a Pig, or a bunch of fast PigletVM interpreters ([[file:interpreter-p2-pigletvm.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/428878/][published in Russian]])
+2. The Flight of a Pig, or a Bunch of Fast PigletVM Interpreters ([[file:interpreter-p2-pigletvm.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/428878/][published in Russian]])
+3. A Needle in a Session Stack, or Regular Expression Bytecode ([[file:interpreter-p3-matcher.org][raw article in Russian]])
 
-Bytecode interpreter examples contain:
+Interpreter examples:
 
 1. [[file:interpreter-basic-switch.c][A trival switch interpreter]].
 2. Immediate [[file:interpreter-immediate-arg.c][operand instruction example]].
 3. [[file:interpreter-stack-machine.c][A stack vm]].
 4. [[file:interpreter-register-machine.c][A register vm]].
 5. A [[file:interpreter-regexp.c][regular expression matching machine]].
-6. Various main loop implementations for [[file:pigletvm.h][PigletVM]]
+6. Various main loop implementations for [[file:pigletvm.h][PigletVM]].
+7. [[file:piglet-matcher.h][Regular expression matcher]] defined on event sequences.
 
-* Anything else? A trivial stack machine - PigletVM!
+* PigletVM, a trivial stack machine
 
 PigletVM is a simple stack machine created for testing various bytecode interpreter main loop
 implementations.
@@ -81,3 +83,8 @@ PROFILE: trace code (reg cache) finished took 301ms
 
 Apart from assembler there's a better way to write PigletVM programs. [[https://github.com/true-grue][@true-grue]] somehow managed to
 implement a proper language compiled into PigletmVM assembler: [[https://github.com/true-grue/PigletC][PigletC]]!
+
+* PigletMatcher, event sequence matcher.
+
+PigletMatcher is a regular expression engine defined for event sequences. It comes in two pieces: the
+virtual machine itself and a parser based on the same tool that was used for PigletC.
