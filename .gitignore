@@ -70,3 +70,8 @@ GTAGS
 
 # emacs stuff
 .dir-locals.el
+
+
+# Python
+.env
+__pycache__
