@@ -16,7 +16,8 @@ def make_term(tag):
     return lambda *a, **k: (Head(tag=tag, **k),) + a
 
 
-attr = lambda t, a: t[0][a]
+def attr(term, attribute_name):
+    return term[0][attribute_name]
 
 
 def add_pos(state):
