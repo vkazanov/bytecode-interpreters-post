@@ -96,8 +96,8 @@ int main(int argc, char *argv[])
     {
         /* Match strings "abc" and "bc" against regexp "a?bc" */
         uint8_t code[] = {
-            OP_OR, 3, 7,
-            OP_CHAR, 'a', OP_JUMP, 7,
+            OP_OR, 3, 5,
+            OP_CHAR, 'a', 
             OP_CHAR, 'b', OP_CHAR, 'c',
             OP_MATCH
         };
