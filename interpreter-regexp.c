@@ -5,7 +5,7 @@
 #include <assert.h>
 
 typedef enum {
-    /* match a single char to an immediate argument from the string and advance ip and cp, or
+    /* match a single char to an immediate argument from the string and advance ip and sp, or
      * abort*/
     OP_CHAR,
     /* jump to and match either left expression or the right one, abort if nothing matches*/
