@@ -50,11 +50,11 @@ void decode(uint16_t instruction,
             uint8_t *reg0, uint8_t *reg1, uint8_t *reg2,
             uint8_t *imm)
 {
-    *op = (instruction & 0xF000) >> 12;
-    *reg0 = (instruction & 0x0F00) >> 8;
-    *reg1 = (instruction & 0x00F0) >> 4;
-    *reg2 = (instruction & 0x000F);
-    *imm = (instruction & 0x00FF);
+    *imm = instruction & 0x00FF;
+    *reg2 = instruction & 0x000F;
+    *reg1 = (instruction>>=4) & 0x000F;
+    *reg0 = (instruction>>=4) & 0x000F;
+    *op = instruction >> 4;
 }
 
 interpret_result vm_interpret(uint16_t *bytecode)
