@@ -5,7 +5,7 @@
 #include <assert.h>
 
 typedef enum {
-    /* match a single char to an immediate argument from the string and advance ip and cp, or
+    /* match a single char to an immediate argument from the string and advance ip and sp, or
      * abort*/
     OP_CHAR,
     /* jump to and match either left expression or the right one, abort if nothing matches*/
@@ -96,8 +96,8 @@ int main(int argc, char *argv[])
     {
         /* Match strings "abc" and "bc" against regexp "a?bc" */
         uint8_t code[] = {
-            OP_OR, 3, 7,
-            OP_CHAR, 'a', OP_JUMP, 7,
+            OP_OR, 3, 5,
+            OP_CHAR, 'a', 
             OP_CHAR, 'b', OP_CHAR, 'c',
             OP_MATCH
         };
