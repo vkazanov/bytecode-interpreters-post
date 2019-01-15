@@ -5,14 +5,17 @@ INTERPRETERS = basic-switch immediate-arg stack-machine register-machine
 
 all: $(INTERPRETERS) regexp-interpreter pigletvm piglet-matcher
 
-test: test-interpreters pigletvm-test piglet-matcher-test
+test: test-interpreters test-regexp-interpreter pigletvm-test piglet-matcher-test
 
 test-interpreters: $(INTERPRETERS)
 	$(foreach interpr,$(INTERPRETERS),./$(interpr);)
 
+test-regexp-interpreter: regexp-interpreter
+	./regexp-interpreter
+
 %: interpreter-%.c
 	$(CC) $(CFLAGS) $< -o $@
-	
+
 regexp-interpreter: interpreter-regexp.c
 	$(CC) $(CFLAGS) $< -o $@
 
@@ -33,4 +36,4 @@ piglet-matcher-test: piglet-matcher.c piglet-matcher-test.c
 clean:
 	rm -vf $(INTERPRETERS) regexp-interpreter pigletvm pigletvm-test piglet-matcher piglet-matcher-test
 
-.PHONY: all clean pigletvm-test piglet-matcher-test test-interpreters
+.PHONY: all clean pigletvm-test piglet-matcher-test test-interpreters test-regexp-interpreter
