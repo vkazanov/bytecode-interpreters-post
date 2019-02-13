@@ -12,7 +12,7 @@ make test
 
 Articles:
 
-1. Home-grown bytecode interpreters ([[file:interpreter-p1.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/425325/][Russian]][[https://badootech.badoo.com/home-grown-bytecode-interpreters-51e12d59b25c][English]])
+1. Home-grown bytecode interpreters ([[file:interpreter-p1.org][source in Russian]], [[https://habr.com/company/badoo/blog/425325/][Russian]], [[https://badootech.badoo.com/home-grown-bytecode-interpreters-51e12d59b25c][English]])
 2. The Flight of a Pig, or a Bunch of Fast PigletVM Interpreters ([[file:interpreter-p2-pigletvm.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/428878/][published in Russian]])
 3. A Needle in a Session Stack, or Regular Expression Bytecode ([[file:interpreter-p3-matcher.org][raw article in Russian]], [[https://habr.com/company/badoo/blog/433054/][published in Russian]])
 
