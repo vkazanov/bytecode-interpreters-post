@@ -262,7 +262,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
             break;
         }
         case OP_STORE: {
-            /* pop a value, pop an adress, put a value into an address */
+            /* pop a value, pop an address, put a value into an address */
             uint64_t val = POP();
             uint16_t addr = POP();
             vm.memory[addr] = val;

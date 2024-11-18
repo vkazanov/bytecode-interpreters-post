@@ -31,7 +31,7 @@ typedef enum {
 
     /* check the current top of the stack and add a copy on top of it */
     OP_DUP,
-    /* pop 2 values from the stack, add and push the result onto the stack */
+    /* discard the top of the stack */
     OP_DISCARD,
 
 
