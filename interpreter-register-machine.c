@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <string.h>
 
 #define REGISTER_NUM 16
 
@@ -42,7 +43,7 @@ typedef enum interpret_result {
 void vm_reset(void)
 {
     puts("Reset vm state");
-    vm = (typeof(vm)) { NULL };
+    memset(&vm, 0, sizeof(vm));
 }
 
 void decode(uint16_t instruction,

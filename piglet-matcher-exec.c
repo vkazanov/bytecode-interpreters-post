@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 
+#include "compat.h"
 #include "piglet-matcher.h"
 
 #define MAX_LINE_LEN 256

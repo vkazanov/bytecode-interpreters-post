@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <string.h>
 
 #define STACK_MAX 256
 
@@ -43,7 +44,7 @@ typedef enum interpret_result {
 void vm_reset(void)
 {
     puts("Reset vm state");
-    vm = (typeof(vm)) { NULL };
+    memset(&vm, 0, sizeof(vm));
     vm.stack_top = vm.stack;
 }
 

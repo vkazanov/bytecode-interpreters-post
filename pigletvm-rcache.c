@@ -4,17 +4,29 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <setjmp.h>
+#include <string.h>
 
+#include "compat.h"
 #include "pigletvm.h"
 
 #define MAX_TRACE_LEN 16
 #define STACK_MAX 256
 #define MEMORY_SIZE 65536
 
+#ifdef _MSC_VER
+/* MSVC-compatible versions without GCC statement expressions */
+#define LOAD_REGS()                             \
+    uint8_t *ip = vm_rcache.ip;                 \
+    uint64_t *stack_top = vm_rcache.stack_top;  \
+    uint64_t acc = vm_rcache.acc
+#else
+/* GCC/Clang version with register hints */
 #define LOAD_REGS()                             \
     register uint8_t *ip = vm_rcache.ip;               \
     register uint64_t *stack_top = vm_rcache.stack_top;\
     register uint64_t acc = vm_rcache.acc
+#endif
+
 #define STORE_REGS()                            \
     vm_rcache.ip = ip;                                 \
     vm_rcache.stack_top = stack_top;                   \
@@ -25,8 +37,20 @@
     ((void)(ip += 2), (ip[-2] << 8) + ip[-1])
 #define PEEK_ARG()                              \
     ((ip[0] << 8) + ip[1])
+
+#ifdef _MSC_VER
+/* MSVC: Use a helper to avoid statement expressions.
+   POP_TO(var) assigns the popped value to var */
+#define POP_TO(var) do { (var) = acc; acc = *(--stack_top); } while(0)
+/* For cases where we just want to discard, we need a temp */
+static uint64_t _pop_tmp;
+#define POP() (_pop_tmp = acc, acc = *(--stack_top), _pop_tmp)
+#else
+/* GCC/Clang version with statement expression */
 #define POP()                                   \
     ({ uint64_t tmp = acc; acc = *(--stack_top); tmp; })
+#endif
+
 #define PUSH(val)                               \
     (*stack_top = acc, stack_top++, acc = (val))
 #define TOP()                                  \
@@ -57,11 +81,10 @@ static struct {
 
 static void vm_rcache_reset(uint8_t *bytecode)
 {
-    vm_rcache = (typeof(vm_rcache)) {
-        .acc = 0,
-        .stack_top = vm_rcache.stack,
-        .ip = bytecode
-    };
+    memset(&vm_rcache, 0, sizeof(vm_rcache));
+    vm_rcache.acc = 0;
+    vm_rcache.stack_top = vm_rcache.stack;
+    vm_rcache.ip = bytecode;
 }
 
 interpret_result vm_rcache_interpret(uint8_t *bytecode)
@@ -398,7 +421,7 @@ interpret_result vm_rcache_interpret_no_range_check(uint8_t *bytecode)
             STORE_REGS();
             return ERROR_END_OF_STREAM;
         }
-        case 26 ... 0x1f:
+        default:
             STORE_REGS();
             return ERROR_UNKNOWN_OPCODE;
         }
@@ -408,6 +431,7 @@ interpret_result vm_rcache_interpret_no_range_check(uint8_t *bytecode)
     return ERROR_END_OF_STREAM;
 }
 
+#if COMPUTED_GOTO_SUPPORTED
 interpret_result vm_rcache_interpret_threaded(uint8_t *bytecode)
 {
     vm_rcache_reset(bytecode);
@@ -601,6 +625,14 @@ end:
     STORE_REGS();
     return SUCCESS;
 }
+#else
+/* Fallback for compilers without computed goto support (e.g., MSVC) */
+interpret_result vm_rcache_interpret_threaded(uint8_t *bytecode)
+{
+    /* On MSVC, fall back to switch-based interpreter */
+    return vm_rcache_interpret(bytecode);
+}
+#endif /* COMPUTED_GOTO_SUPPORTED */
 
 
 uint64_t vm_rcache_get_result(void)
@@ -999,11 +1031,10 @@ static void trace_compile_handler(scode *trace_head, uint64_t *stack_top)
 
 static void vm_rcache_trace_reset(uint8_t *bytecode)
 {
-    vm_rcache_trace = (typeof(vm_rcache_trace)) {
-        .stack_top = vm_rcache_trace.stack,
-        .bytecode = bytecode,
-        .is_running = true
-    };
+    memset(&vm_rcache_trace, 0, sizeof(vm_rcache_trace));
+    vm_rcache_trace.stack_top = vm_rcache_trace.stack;
+    vm_rcache_trace.bytecode = bytecode;
+    vm_rcache_trace.is_running = true;
     for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
         vm_rcache_trace.trace_cache[trace_i][0].handler = trace_compile_handler;
 }
