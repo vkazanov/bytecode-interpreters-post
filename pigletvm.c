@@ -379,7 +379,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         case OP_ABORT: {
             return ERROR_END_OF_STREAM;
         }
-        default:
+        case 26: case 27: case 28: case 29: case 30: case 31:
             return ERROR_UNKNOWN_OPCODE;
         }
     }
