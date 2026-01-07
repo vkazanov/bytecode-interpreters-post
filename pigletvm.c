@@ -4,7 +4,9 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <setjmp.h>
+#include <string.h>
 
+#include "compat.h"
 #include "pigletvm.h"
 
 #define MAX_TRACE_LEN 16
@@ -48,10 +50,9 @@ static struct {
 
 static void vm_reset(uint8_t *bytecode)
 {
-    vm = (typeof(vm)) {
-        .stack_top = vm.stack,
-        .ip = bytecode
-    };
+    memset(&vm, 0, sizeof(vm));
+    vm.stack_top = vm.stack;
+    vm.ip = bytecode;
 }
 
 interpret_result vm_interpret(uint8_t *bytecode)
@@ -378,7 +379,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
         case OP_ABORT: {
             return ERROR_END_OF_STREAM;
         }
-        case 26 ... 0x1f:
+        case 26: case 27: case 28: case 29: case 30: case 31:
             return ERROR_UNKNOWN_OPCODE;
         }
     }
@@ -386,6 +387,7 @@ interpret_result vm_interpret_no_range_check(uint8_t *bytecode)
     return ERROR_END_OF_STREAM;
 }
 
+#if COMPUTED_GOTO_SUPPORTED
 interpret_result vm_interpret_threaded(uint8_t *bytecode)
 {
     vm_reset(bytecode);
@@ -575,6 +577,14 @@ op_abort: {
 end:
     return SUCCESS;
 }
+#else
+/* Fallback for compilers without computed goto support (e.g., MSVC) */
+interpret_result vm_interpret_threaded(uint8_t *bytecode)
+{
+    /* On MSVC, fall back to switch-based interpreter */
+    return vm_interpret(bytecode);
+}
+#endif /* COMPUTED_GOTO_SUPPORTED */
 
 
 uint64_t vm_get_result(void)
@@ -964,11 +974,10 @@ static void trace_compile_handler(scode *trace_head)
 
 static void vm_trace_reset(uint8_t *bytecode)
 {
-    vm_trace = (typeof(vm_trace)) {
-        .stack_top = vm_trace.stack,
-        .bytecode = bytecode,
-        .is_running = true
-    };
+    memset(&vm_trace, 0, sizeof(vm_trace));
+    vm_trace.stack_top = vm_trace.stack;
+    vm_trace.bytecode = bytecode;
+    vm_trace.is_running = true;
     for (size_t trace_i = 0; trace_i < MAX_CODE_LEN; trace_i++ )
         vm_trace.trace_cache[trace_i][0].handler = trace_compile_handler;
 }

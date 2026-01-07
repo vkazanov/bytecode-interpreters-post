@@ -3,21 +3,17 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <string.h>
 
 matcher *matcher_create(uint8_t *bytecode)
 {
     matcher * m = malloc(sizeof(*m));
     if (!m) return NULL;
 
-    *m = (typeof(*m)) {
-        .bytecode = bytecode,
-
-        .current_threads = { 0 },
-        .current_thread_num = 0,
-
-        .next_threads = { 0 },
-        .next_thread_num = 0,
-    };
+    memset(m, 0, sizeof(*m));
+    m->bytecode = bytecode;
+    m->current_thread_num = 0;
+    m->next_thread_num = 0;
 
     return m;
 }

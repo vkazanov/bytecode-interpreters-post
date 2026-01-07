@@ -3,22 +3,20 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <sys/time.h>
 #include <time.h>
 
+#include "compat.h"
 #include "pigletvm.h"
 
 #define MAX_LINE_LEN 256
 
-#define TIMER_DEF(start_var,end_var) struct timeval (start_var); struct timeval (end_var)
-#define TIMER_START(start_var) gettimeofday(&(start_var), NULL)
-#define TIMER_END(start_var,end_var,msg)                                \
-    do{                                                                 \
-        gettimeofday(&(end_var), NULL);                                 \
+#define TIMER_DEF(timer_var) compat_timer timer_var; compat_timer_init(&timer_var)
+#define TIMER_START(timer_var) compat_timer_start(&timer_var)
+#define TIMER_END(timer_var, msg)                                       \
+    do {                                                                \
         fprintf(stderr, "PROFILE: %s took %ldms\n", msg,                \
-                (((end_var).tv_sec * 1000000L + (end_var).tv_usec) -    \
-                   ((start_var).tv_sec * 1000000L + (start_var).tv_usec)) / 1000); \
-    } while (0);
+                compat_timer_elapsed_ms(&timer_var));                   \
+    } while (0)
 
 static char *error_to_msg[] = {
     [SUCCESS] = "success",
@@ -577,39 +575,39 @@ int main(int argc, char *argv[])
         const char *path = argv[2];
         uint8_t *bytecode = read_file(path);
 
-        TIMER_DEF(start_time, end_time);
+        TIMER_DEF(timer);
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_switch(bytecode);
-        TIMER_END(start_time, end_time, "switch code finished");
+        TIMER_END(timer, "switch code finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_switch_no_range_check(bytecode);
-        TIMER_END(start_time, end_time, "switch code (no range check) finished");
+        TIMER_END(timer, "switch code (no range check) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_threaded(bytecode);
-        TIMER_END(start_time, end_time, "threaded code finished");
+        TIMER_END(timer, "threaded code finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_trace(bytecode);
-        TIMER_END(start_time, end_time, "trace code finished");
+        TIMER_END(timer, "trace code finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_rcache_switch(bytecode);
-        TIMER_END(start_time, end_time, "switch code (reg cache) finished");
+        TIMER_END(timer, "switch code (reg cache) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_rcache_switch_no_range_check(bytecode);
-        TIMER_END(start_time, end_time, "switch code (reg cache) (no range check) finished");
+        TIMER_END(timer, "switch code (reg cache) (no range check) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_rcache_threaded(bytecode);
-        TIMER_END(start_time, end_time, "threaded code (reg cache) finished");
+        TIMER_END(timer, "threaded code (reg cache) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         res = run_rcache_trace(bytecode);
-        TIMER_END(start_time, end_time, "trace code (reg cache) finished");
+        TIMER_END(timer, "trace code (reg cache) finished");
 
         free(bytecode);
     } else if (0 == strcmp(cmd, "runtimes")) {
@@ -627,47 +625,47 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         };
 
-        TIMER_DEF(start_time, end_time);
+        TIMER_DEF(timer);
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_switch(bytecode);
-        TIMER_END(start_time, end_time, "switch code finished");
+        TIMER_END(timer, "switch code finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_switch_no_range_check(bytecode);
-        TIMER_END(start_time, end_time, "switch code (no range check) finished");
+        TIMER_END(timer, "switch code (no range check) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_threaded(bytecode);
-        TIMER_END(start_time, end_time, "threaded code finished");
+        TIMER_END(timer, "threaded code finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_trace(bytecode);
-        TIMER_END(start_time, end_time, "trace code finished");
+        TIMER_END(timer, "trace code finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_rcache_switch(bytecode);
-        TIMER_END(start_time, end_time, "switch code (reg cache) finished");
+        TIMER_END(timer, "switch code (reg cache) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_rcache_switch_no_range_check(bytecode);
-        TIMER_END(start_time, end_time, "switch code (reg cache) (no range check) finished");
+        TIMER_END(timer, "switch code (reg cache) (no range check) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_rcache_threaded(bytecode);
-        TIMER_END(start_time, end_time, "threaded code (reg cache) finished");
+        TIMER_END(timer, "threaded code (reg cache) finished");
 
-        TIMER_START(start_time);
+        TIMER_START(timer);
         for (int i = 0; i < num_iterations; i++)
             res = run_rcache_trace(bytecode);
-        TIMER_END(start_time, end_time, "trace code (reg cache) finished");
+        TIMER_END(timer, "trace code (reg cache) finished");
 
         free(bytecode);
     } else if (0 == strcmp(cmd, "asm")) {

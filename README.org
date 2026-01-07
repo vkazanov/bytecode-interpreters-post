@@ -1,11 +1,26 @@
 * What..?
 
-A few basic bytecode interpreters used as example code in a series of articles. Given a recent GCC
-all the interpreters can be compiled in one go using a supplied Makefile:
+A few basic bytecode interpreters used as example code in a series of articles.
+
+* Building
+
+** Using Make (Unix/Linux)
+
+Given a recent GCC, all the interpreters can be compiled using the supplied Makefile:
 
 #+BEGIN_SRC shell
 make all
 make test
+#+END_SRC
+
+** Using CMake (Cross-platform)
+
+For cross-platform builds (including Windows), use CMake:
+
+#+BEGIN_SRC shell
+cmake -B build
+cmake --build build
+cmake --build build --target test
 #+END_SRC
 
 * Where?
